@@ -69,7 +69,7 @@ async function runTraining(jobId: string, body: typeof CreateJobBody._type) {
   const csvPath = path.join(UPLOAD_DIR, `${body.datasetId}.csv`);
   const outputDir = path.join(RESULTS_DIR, jobId);
 
-  const pythonScript = path.join(process.cwd(), "training", "train.py");
+  const pythonScript = path.join(__dirname, "..", "training", "train.py");
 
   const args = [
     pythonScript,
