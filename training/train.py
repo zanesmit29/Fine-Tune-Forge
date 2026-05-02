@@ -45,6 +45,18 @@ def log(msg: str):
     print(msg, flush=True)
 
 
+def get_target_modules(model_id: str) -> list:
+    """Return the LoRA target module names for a given model architecture."""
+    mid = model_id.lower()
+    if "distilbert" in mid:
+        return ["q_lin", "v_lin"]
+    elif "qwen" in mid:
+        return ["q_proj", "v_proj"]
+    else:
+        # GPT-2, DistilGPT-2, and most decoder-only models
+        return ["c_attn"]
+
+
 # ---------------------------------------------------------------------------
 # Save the training script itself to output dir for download
 # ---------------------------------------------------------------------------
@@ -75,6 +87,15 @@ import numpy as np
 from sklearn.preprocessing import LabelEncoder
 
 warnings.filterwarnings("ignore")
+
+def get_target_modules(model_id: str) -> list:
+    mid = model_id.lower()
+    if "distilbert" in mid:
+        return ["q_lin", "v_lin"]
+    elif "qwen" in mid:
+        return ["q_proj", "v_proj"]
+    else:
+        return ["c_attn"]
 
 # ── Configuration ────────────────────────────────────────────────────────────
 MODEL_ID = "{args.model_id}"
@@ -147,6 +168,7 @@ lora_config = LoraConfig(
     lora_alpha={args.lora_rank * 2},
     lora_dropout=0.1,
     bias="none",
+    target_modules=get_target_modules(MODEL_ID),
 )
 model = get_peft_model(model, lora_config)
 model.print_trainable_parameters()
@@ -289,12 +311,15 @@ try:
     if model.config.pad_token_id is None:
         model.config.pad_token_id = tokenizer.pad_token_id
 
+    target_modules = get_target_modules(args.model_id)
+    log(f"  LoRA target modules: {target_modules}")
     lora_config = LoraConfig(
         task_type=TaskType.SEQ_CLS,
         r=args.lora_rank,
         lora_alpha=args.lora_rank * 2,
         lora_dropout=0.1,
         bias="none",
+        target_modules=target_modules,
     )
     model = get_peft_model(model, lora_config)
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
