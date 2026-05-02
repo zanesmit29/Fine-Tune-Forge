@@ -1,26 +1,47 @@
 import { Link, useLocation } from "wouter";
-import { Database, LayoutTemplate } from "lucide-react";
+import { Cpu } from "lucide-react";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <header className="border-b bg-card px-6 py-4 flex items-center justify-between sticky top-0 z-10">
-        <div className="flex items-center gap-2">
-          <div className="bg-primary/10 p-2 rounded-md">
-            <LayoutTemplate className="w-5 h-5 text-primary" />
+      <header className="bg-white border-b border-border sticky top-0 z-10 shadow-sm">
+        <div className="max-w-5xl mx-auto px-6 flex items-center justify-between h-14">
+          <div className="flex items-center gap-2.5">
+            <div className="bg-primary flex items-center justify-center w-7 h-7 rounded-md shadow-sm">
+              <Cpu className="w-4 h-4 text-white" />
+            </div>
+            <span className="font-semibold text-[15px] tracking-tight text-foreground">
+              FineTune<span className="text-primary">Forge</span>
+            </span>
+            <span className="hidden sm:block text-muted-foreground/40 text-xs ml-1 mt-px">|</span>
+            <span className="hidden sm:block text-muted-foreground text-xs">Model Fine-Tuning</span>
           </div>
-          <span className="font-bold tracking-tight text-lg">FineTuneForge</span>
+
+          <nav className="flex items-stretch h-14">
+            <Link
+              href="/"
+              className={`flex items-center px-4 text-sm font-medium border-b-2 transition-colors duration-150 ${
+                location === "/"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
+              }`}
+            >
+              Wizard
+            </Link>
+            <Link
+              href="/history"
+              className={`flex items-center px-4 text-sm font-medium border-b-2 transition-colors duration-150 ${
+                location === "/history"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
+              }`}
+            >
+              History
+            </Link>
+          </nav>
         </div>
-        <nav className="flex items-center gap-4">
-          <Link href="/" className={`text-sm font-medium transition-colors hover:text-primary ${location === '/' ? 'text-primary' : 'text-muted-foreground'}`}>
-            Wizard
-          </Link>
-          <Link href="/history" className={`text-sm font-medium transition-colors hover:text-primary ${location === '/history' ? 'text-primary' : 'text-muted-foreground'}`}>
-            History
-          </Link>
-        </nav>
       </header>
       <main className="flex-1 max-w-5xl w-full mx-auto p-6 lg:p-8">
         {children}
