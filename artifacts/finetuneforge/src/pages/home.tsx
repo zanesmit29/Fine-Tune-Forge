@@ -1,10 +1,7 @@
-import { useState } from "react";
 import { useLocation } from "wouter";
 import { Layout } from "@/components/layout";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { useListModels, useCreateJob } from "@workspace/api-client-react";
+import { useCreateJob } from "@workspace/api-client-react";
 import { DatasetPreview, CreateJobBodyLoraRank } from "@workspace/api-client-react";
 import { StepModel } from "@/components/wizard/step-model";
 import { StepData } from "@/components/wizard/step-data";
@@ -24,19 +21,14 @@ export interface WizardState {
 
 const STEPS = ["Model", "Data", "Config", "Train"];
 
-export default function Home() {
-  const [step, setStep] = useState(1);
-  const [state, setState] = useState<WizardState>({
-    modelId: "",
-    datasetPreview: null,
-    textColumn: "",
-    labelColumn: "",
-    epochs: 3,
-    learningRate: 0.0002,
-    loraRank: 8,
-    jobId: null,
-  });
+interface HomeProps {
+  step: number;
+  setStep: (step: number) => void;
+  state: WizardState;
+  setState: React.Dispatch<React.SetStateAction<WizardState>>;
+}
 
+export default function Home({ step, setStep, state, setState }: HomeProps) {
   const createJob = useCreateJob();
   const [, setLocation] = useLocation();
 
@@ -65,7 +57,7 @@ export default function Home() {
       },
       {
         onSuccess: (job) => {
-          setState({ ...state, jobId: job.id });
+          setState((prev) => ({ ...prev, jobId: job.id }));
           setStep(4);
         },
       }
