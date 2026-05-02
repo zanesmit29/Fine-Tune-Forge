@@ -90,7 +90,10 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # ── Data loading ─────────────────────────────────────────────────────────────
 print("[1/6] Loading dataset...")
-df = pd.read_csv(CSV_PATH)
+try:
+    df = pd.read_csv(CSV_PATH, encoding="utf-8")
+except UnicodeDecodeError:
+    df = pd.read_csv(CSV_PATH, encoding="latin-1")
 df = df.dropna(subset=[TEXT_COLUMN, LABEL_COLUMN])
 df[TEXT_COLUMN] = df[TEXT_COLUMN].astype(str)
 
@@ -224,7 +227,10 @@ save_training_script()
 # ---------------------------------------------------------------------------
 try:
     log("[1/6] Loading dataset...")
-    df = pd.read_csv(args.csv_path)
+    try:
+        df = pd.read_csv(args.csv_path, encoding="utf-8")
+    except UnicodeDecodeError:
+        df = pd.read_csv(args.csv_path, encoding="latin-1")
     df = df.dropna(subset=[args.text_column, args.label_column])
     df[args.text_column] = df[args.text_column].astype(str)
     log(f"  Loaded {len(df)} rows from {os.path.basename(args.csv_path)}")
