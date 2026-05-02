@@ -1,0 +1,65 @@
+App: FineTuneForge
+
+What to build
+A web platform where non-technical users upload a CSV dataset, select a 
+small base model (DistilBERT, GPT-2, Qwen2.5-0.5B), configure fine-tuning 
+via a guided UI, and receive a downloadable .pkl model file plus the full 
+Python training code that generated it — all running live on the server 
+using Hugging Face transformers + PEFT/LoRA on CPU.
+
+Tech stack
+Frontend: React + Tailwind CSS
+Backend: Python / FastAPI
+Database: SQLite (job status tracking)
+Auth: Replit Auth
+Libraries: transformers, peft, datasets, torch (CPU), accelerate
+
+Core features (MVP only)
+1. Model picker — dropdown of 4–5 pre-approved CPU-safe models (DistilBERT, 
+   GPT-2-small, Qwen2.5-0.5B) with parameter count and estimated training 
+   time shown
+2. CSV uploader — accept text + label columns, auto-detect schema, show 
+   preview of first 5 rows
+3. Config wizard — set epochs (1–5), learning rate, LoRA rank (r=4/8/16) 
+   via sliders with safe defaults
+4. Async training runner — run fine-tuning as a FastAPI BackgroundTask; 
+   stream live training logs to frontend via Server-Sent Events (SSE)
+5. Results page — download .pkl model, download .py training script 
+   (syntax-highlighted), show final train/eval loss
+
+UI / UX requirements
+Sharp, technical light theme: white/off-white background (#FAFAFA), accent 
+color electric blue (#2563EB) or cyan (#06B6D4) for CTAs and active states, 
+slate gray (#64748B) for secondary text
+
+Monospace fonts for code blocks and log terminal (JetBrains Mono or IBM Plex 
+Mono via Google Fonts); clean sans-serif for UI text (Inter or DM Sans)
+
+4-step wizard with a horizontal progress bar at the top showing 
+Model → Data → Config → Train
+
+Subtle card borders (1px, #E2E8F0) with soft box-shadows — no heavy gradients
+
+Live training terminal: white background, dark text, line-numbered output — 
+like a real IDE console
+
+Results screen: metric badges (loss, accuracy) styled like GitHub status 
+chips; "View Code" modal with highlight.js syntax highlighting in GitHub 
+Light theme
+
+Micro-animations: step transitions slide in, progress bar fills smoothly, 
+log lines fade in one by one
+
+Start here
+Scaffold the project: FastAPI backend with /upload, /train (POST, starts 
+background job), /status/{job_id} (SSE stream), /download/{job_id} routes. 
+React frontend with 4-step wizard shell. Start with the CSV uploader and 
+confirm column detection works before touching the training runner.
+
+Constraints
+All API keys and HF tokens in Replit Secrets
+Training runs as FastAPI BackgroundTask — never block the main thread
+Cap max model size at 500M parameters to stay within 8GB RAM
+One-click deployable on Replit
+Keep generated training scripts clean and well-commented — they're a 
+core product feature

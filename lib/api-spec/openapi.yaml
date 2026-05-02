@@ -3,13 +3,19 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: FineTuneForge API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: models
+    description: Available base models
+  - name: upload
+    description: CSV dataset upload
+  - name: jobs
+    description: Training job management
 paths:
   /healthz:
     get:
@@ -24,6 +30,149 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /models:
+    get:
+      operationId: listModels
+      tags: [models]
+      summary: List available base models
+      description: Returns all CPU-safe models available for fine-tuning
+      responses:
+        "200":
+          description: List of models
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ModelInfo"
+
+  /upload:
+    post:
+      operationId: uploadDataset
+      tags: [upload]
+      summary: Upload a CSV dataset
+      description: Accepts a CSV file (multipart/form-data with field 'file') and returns detected columns and a preview of rows
+      responses:
+        "200":
+          description: CSV parsed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DatasetPreview"
+        "400":
+          description: Invalid CSV
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /jobs:
+    get:
+      operationId: listJobs
+      tags: [jobs]
+      summary: List all training jobs
+      description: Returns all training jobs ordered by creation time descending
+      responses:
+        "200":
+          description: List of jobs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TrainingJob"
+    post:
+      operationId: createJob
+      tags: [jobs]
+      summary: Create and start a training job
+      description: Starts a fine-tuning job as a background task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateJobBody"
+      responses:
+        "201":
+          description: Job created and started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingJob"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /jobs/{jobId}:
+    get:
+      operationId: getJob
+      tags: [jobs]
+      summary: Get a training job by ID
+      description: Returns job status, config, and final metrics if available
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Job details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingJob"
+        "404":
+          description: Job not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /jobs/{jobId}/logs:
+    get:
+      operationId: getJobLogs
+      tags: [jobs]
+      summary: Get training logs for a job
+      description: Returns all log lines collected so far for a job
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Log lines
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobLogsResponse"
+        "404":
+          description: Job not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /jobs/stats/summary:
+    get:
+      operationId: getJobStats
+      tags: [jobs]
+      summary: Aggregate stats across all jobs
+      description: Returns summary counts and averages useful for dashboard display
+      responses:
+        "200":
+          description: Aggregated stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobStats"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +183,142 @@ components:
       required:
         - status
 
+    ModelInfo:
+      type: object
+      required: [id, name, paramCount, estimatedMinutes, description, taskType]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        paramCount:
+          type: string
+        estimatedMinutes:
+          type: integer
+        description:
+          type: string
+        taskType:
+          type: string
+
+    DatasetPreview:
+      type: object
+      required: [datasetId, columns, previewRows, rowCount]
+      properties:
+        datasetId:
+          type: string
+        columns:
+          type: array
+          items:
+            type: string
+        previewRows:
+          type: array
+          items:
+            type: object
+            additionalProperties:
+              type: string
+        rowCount:
+          type: integer
+        detectedTextColumn:
+          type: ["string", "null"]
+        detectedLabelColumn:
+          type: ["string", "null"]
+
+    CreateJobBody:
+      type: object
+      required: [modelId, datasetId, textColumn, labelColumn, epochs, learningRate, loraRank]
+      properties:
+        modelId:
+          type: string
+        datasetId:
+          type: string
+        textColumn:
+          type: string
+        labelColumn:
+          type: string
+        epochs:
+          type: integer
+          minimum: 1
+          maximum: 5
+        learningRate:
+          type: number
+        loraRank:
+          type: integer
+          enum: [4, 8, 16]
+
+    TrainingJob:
+      type: object
+      required: [id, modelId, modelName, datasetId, textColumn, labelColumn, epochs, learningRate, loraRank, status, createdAt]
+      properties:
+        id:
+          type: string
+        modelId:
+          type: string
+        modelName:
+          type: string
+        datasetId:
+          type: string
+        textColumn:
+          type: string
+        labelColumn:
+          type: string
+        epochs:
+          type: integer
+        learningRate:
+          type: number
+        loraRank:
+          type: integer
+        status:
+          type: string
+          enum: [queued, running, completed, failed]
+        createdAt:
+          type: string
+          format: date-time
+        startedAt:
+          type: ["string", "null"]
+          format: date-time
+        completedAt:
+          type: ["string", "null"]
+          format: date-time
+        trainLoss:
+          type: ["number", "null"]
+        evalLoss:
+          type: ["number", "null"]
+        accuracy:
+          type: ["number", "null"]
+        errorMessage:
+          type: ["string", "null"]
+
+    JobLogsResponse:
+      type: object
+      required: [jobId, lines, status]
+      properties:
+        jobId:
+          type: string
+        lines:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+
+    JobStats:
+      type: object
+      required: [total, completed, running, failed, avgTrainLoss]
+      properties:
+        total:
+          type: integer
+        completed:
+          type: integer
+        running:
+          type: integer
+        failed:
+          type: integer
+        avgTrainLoss:
+          type: ["number", "null"]
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
