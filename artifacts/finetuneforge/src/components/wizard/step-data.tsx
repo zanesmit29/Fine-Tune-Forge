@@ -118,7 +118,7 @@ export function StepData({
                       <SelectValue placeholder="Select column..." />
                     </SelectTrigger>
                     <SelectContent>
-                      {state.datasetPreview.columns.map(col => (
+                      {state.datasetPreview.columns.filter(col => col.trim() !== "").map(col => (
                         <SelectItem key={col} value={col}>{col}</SelectItem>
                       ))}
                     </SelectContent>
@@ -132,7 +132,7 @@ export function StepData({
                       <SelectValue placeholder="Select column..." />
                     </SelectTrigger>
                     <SelectContent>
-                      {state.datasetPreview.columns.map(col => (
+                      {state.datasetPreview.columns.filter(col => col.trim() !== "").map(col => (
                         <SelectItem key={col} value={col}>{col}</SelectItem>
                       ))}
                     </SelectContent>

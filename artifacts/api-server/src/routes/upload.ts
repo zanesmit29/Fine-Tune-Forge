@@ -67,7 +67,7 @@ router.post(
         return;
       }
 
-      const columns = Object.keys(records[0]);
+      const columns = Object.keys(records[0]).filter((c) => c.trim() !== "");
       const previewRows = records.slice(0, 5);
       const { textCol, labelCol } = detectColumns(columns);
 
