@@ -30,7 +30,12 @@ const NAV_ITEMS: NavItem[] = [
 
 function Logo() {
   return (
-    <div className="flex items-center gap-2.5 px-5 h-16 border-b border-[#E2E8F0]">
+    <Link
+      href="/"
+      className="flex items-center gap-2.5 px-5 h-16 border-b border-[#E2E8F0] hover:bg-[#F8FAFC] transition-colors"
+      aria-label="Go to FineTuneForge landing page"
+      data-testid="link-logo-home"
+    >
       <svg
         width="28"
         height="28"
@@ -52,7 +57,7 @@ function Logo() {
       <span className="font-semibold text-[15px] tracking-tight text-[#0F172A]">
         FineTuneForge
       </span>
-    </div>
+    </Link>
   );
 }
 
