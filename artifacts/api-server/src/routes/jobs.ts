@@ -155,11 +155,19 @@ async function runTraining(
     ? `${pythonLibs}:${existingPythonPath}`
     : pythonLibs;
 
+  // Point HF cache at the project-local cache shipped in the deploy image
+  // (populated at build time by training/prefetch_models.py). This avoids
+  // re-downloading gpt2 on every cold start.
+  const hfCacheDir = path.resolve(__dirname, "..", ".hf-cache");
+  const hfHubCache = path.join(hfCacheDir, "hub");
+
   const proc = spawn("python3", args, {
     env: {
       ...process.env,
       DATABASE_URL: process.env.DATABASE_URL ?? "",
       PYTHONPATH: pythonPath,
+      HF_HOME: process.env.HF_HOME ?? hfCacheDir,
+      HF_HUB_CACHE: process.env.HF_HUB_CACHE ?? hfHubCache,
       ...(modalCreds
         ? {
             MODAL_TOKEN_ID: modalCreds.tokenId,

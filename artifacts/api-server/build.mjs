@@ -1,6 +1,7 @@
 import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { spawnSync } from "node:child_process";
 import { build as esbuild } from "esbuild";
 import esbuildPluginPino from "esbuild-plugin-pino";
 import { rm, cp, mkdir } from "node:fs/promises";
@@ -19,6 +20,28 @@ async function buildAll() {
   const trainSrc = path.resolve(artifactDir, "../../training/train.py");
   await mkdir(trainingDest, { recursive: true });
   await cp(trainSrc, path.join(trainingDest, "train.py"));
+
+  // Pre-download default base models into a local HF cache so cold-start
+  // training jobs don't pay the ~500MB Hugging Face download. Skips if
+  // disabled or if Python deps aren't available (dev/CI without .pythonlibs).
+  if (process.env.SKIP_HF_PREFETCH !== "1") {
+    const pythonLibs = "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages";
+    const prefetchScript = path.resolve(artifactDir, "training/prefetch_models.py");
+    const result = spawnSync("python3", [prefetchScript], {
+      stdio: "inherit",
+      env: {
+        ...process.env,
+        PYTHONPATH: process.env.PYTHONPATH
+          ? `${pythonLibs}:${process.env.PYTHONPATH}`
+          : pythonLibs,
+      },
+    });
+    if (result.status !== 0) {
+      console.warn(
+        `[build] HF prefetch exited with code ${result.status} — runtime will fall back to lazy download.`,
+      );
+    }
+  }
 
   await esbuild({
     entryPoints: [path.resolve(artifactDir, "src/index.ts")],
