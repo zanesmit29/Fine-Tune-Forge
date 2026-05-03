@@ -1,1 +1,66 @@
-[]
+[
+  {
+    "id": "s01-title",
+    "position": 1,
+    "filepath": "src/pages/slides/Slide01Title.tsx",
+    "title": "FineTuneForge — Test Report",
+    "description": "Title slide introducing the end-to-end test report for FineTuneForge.",
+    "speakerNotes": "Welcome. This deck walks through an end-to-end functional test of FineTuneForge, captured on May 3, 2026."
+  },
+  {
+    "id": "s02-scope",
+    "position": 2,
+    "filepath": "src/pages/slides/Slide02Scope.tsx",
+    "title": "What We Tested",
+    "description": "Overview of the modules exercised during the test pass.",
+    "speakerNotes": "We exercised every primary module: landing, wizard, integrations, training history, model registry, and the in-app docs."
+  },
+  {
+    "id": "s03-landing",
+    "position": 3,
+    "filepath": "src/pages/slides/Slide03Landing.tsx",
+    "title": "Landing & Hero",
+    "description": "Screenshot of the FineTuneForge landing page with hero and wizard preview.",
+    "speakerNotes": "The landing page renders cleanly with the hero, value prop, and a preview of the wizard above the fold."
+  },
+  {
+    "id": "s04-wizard",
+    "position": 4,
+    "filepath": "src/pages/slides/Slide04Wizard.tsx",
+    "title": "Training Wizard",
+    "description": "Task selection step showing all six task types, including LM Studio support.",
+    "speakerNotes": "The wizard exposes six task types. Instruction Tuning is now flagged LM Studio Ready, matching the recent integration work."
+  },
+  {
+    "id": "s05-integrations",
+    "position": 5,
+    "filepath": "src/pages/slides/Slide05Integrations.tsx",
+    "title": "Modal Integration",
+    "description": "New Integrations page showing a verified Modal connection used to enable GPU training.",
+    "speakerNotes": "Modal credentials are stored in-memory only, masked in the UI, and validated on save. The page shows a Connected state with verification timestamp."
+  },
+  {
+    "id": "s06-get-started",
+    "position": 6,
+    "filepath": "src/pages/slides/Slide06GetStarted.tsx",
+    "title": "In-App Documentation",
+    "description": "Get Started page including the new Enabling GPU Training with Modal section.",
+    "speakerNotes": "We added a dedicated section explaining how to enable GPU training through Modal, including where to paste the token and what the wizard expects."
+  },
+  {
+    "id": "s07-results",
+    "position": 7,
+    "filepath": "src/pages/slides/Slide07Results.tsx",
+    "title": "Training Results",
+    "description": "Quantitative results from the My Models registry and Job History.",
+    "speakerNotes": "Top-trained models on DistilBERT reached 99.1 percent and 99.0 percent accuracy. Across 13 jobs, 4 completed successfully and 1 was actively running at capture."
+  },
+  {
+    "id": "s08-verdict",
+    "position": 8,
+    "filepath": "src/pages/slides/Slide08Verdict.tsx",
+    "title": "Verdict",
+    "description": "Final verdict and summary of the test pass.",
+    "speakerNotes": "All primary user flows passed. Modal-backed GPU training is wired end to end and ready for production use."
+  }
+]
