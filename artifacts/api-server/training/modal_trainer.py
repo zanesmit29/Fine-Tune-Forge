@@ -92,6 +92,7 @@ def train_remote(
     epochs: int,
     learning_rate: float,
     lora_rank: int,
+    hf_token: str = "",
 ):
     """Run LoRA fine-tuning on an A10G GPU and return model bytes + metrics.
 
@@ -100,7 +101,14 @@ def train_remote(
     pickled model bytes and metrics.
     """
     import io
+    import os as _os
     import pickle as _pickle
+
+    # Make the user's Hugging Face token available inside the Modal worker so
+    # `transformers.from_pretrained` can authenticate and pull gated models.
+    if hf_token:
+        _os.environ["HF_TOKEN"] = hf_token
+        _os.environ["HUGGING_FACE_HUB_TOKEN"] = hf_token
 
     import numpy as np
     import pandas as pd
@@ -332,6 +340,7 @@ def main() -> int:
                 args.epochs,
                 args.lr,
                 args.lora_rank,
+                os.environ.get("HF_TOKEN", ""),
             ):
                 if isinstance(item, dict) and "__result__" in item:
                     result = item["__result__"]

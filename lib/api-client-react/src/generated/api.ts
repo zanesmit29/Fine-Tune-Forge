@@ -17,11 +17,13 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  ConnectHfBody,
   ConnectModalBody,
   CreateJobBody,
   DatasetPreview,
   ErrorResponse,
   HealthStatus,
+  HfIntegrationStatus,
   JobLogsResponse,
   JobStats,
   ModalIntegrationStatus,
@@ -1161,6 +1163,330 @@ export const useTestModalConnection = <
   TContext
 > => {
   return useMutation(getTestModalConnectionMutationOptions(options));
+};
+
+/**
+ * Stores a Hugging Face API token in the server session after verifying it against the HF Hub
+ * @summary Connect a Hugging Face account
+ */
+export const getConnectHfUrl = () => {
+  return `/api/integrations/hf`;
+};
+
+export const connectHf = async (
+  connectHfBody: ConnectHfBody,
+  options?: RequestInit,
+): Promise<HfIntegrationStatus> => {
+  return customFetch<HfIntegrationStatus>(getConnectHfUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(connectHfBody),
+  });
+};
+
+export const getConnectHfMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof connectHf>>,
+    TError,
+    { data: BodyType<ConnectHfBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof connectHf>>,
+  TError,
+  { data: BodyType<ConnectHfBody> },
+  TContext
+> => {
+  const mutationKey = ["connectHf"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof connectHf>>,
+    { data: BodyType<ConnectHfBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return connectHf(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ConnectHfMutationResult = NonNullable<
+  Awaited<ReturnType<typeof connectHf>>
+>;
+export type ConnectHfMutationBody = BodyType<ConnectHfBody>;
+export type ConnectHfMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Connect a Hugging Face account
+ */
+export const useConnectHf = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof connectHf>>,
+    TError,
+    { data: BodyType<ConnectHfBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof connectHf>>,
+  TError,
+  { data: BodyType<ConnectHfBody> },
+  TContext
+> => {
+  return useMutation(getConnectHfMutationOptions(options));
+};
+
+/**
+ * @summary Disconnect the Hugging Face account
+ */
+export const getDisconnectHfUrl = () => {
+  return `/api/integrations/hf`;
+};
+
+export const disconnectHf = async (
+  options?: RequestInit,
+): Promise<HfIntegrationStatus> => {
+  return customFetch<HfIntegrationStatus>(getDisconnectHfUrl(), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDisconnectHfMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof disconnectHf>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof disconnectHf>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ["disconnectHf"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof disconnectHf>>,
+    void
+  > = () => {
+    return disconnectHf(requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DisconnectHfMutationResult = NonNullable<
+  Awaited<ReturnType<typeof disconnectHf>>
+>;
+
+export type DisconnectHfMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Disconnect the Hugging Face account
+ */
+export const useDisconnectHf = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof disconnectHf>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof disconnectHf>>,
+  TError,
+  void,
+  TContext
+> => {
+  return useMutation(getDisconnectHfMutationOptions(options));
+};
+
+/**
+ * @summary Get Hugging Face connection status
+ */
+export const getGetHfStatusUrl = () => {
+  return `/api/integrations/hf/status`;
+};
+
+export const getHfStatus = async (
+  options?: RequestInit,
+): Promise<HfIntegrationStatus> => {
+  return customFetch<HfIntegrationStatus>(getGetHfStatusUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetHfStatusQueryKey = () => {
+  return [`/api/integrations/hf/status`] as const;
+};
+
+export const getGetHfStatusQueryOptions = <
+  TData = Awaited<ReturnType<typeof getHfStatus>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getHfStatus>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetHfStatusQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getHfStatus>>> = ({
+    signal,
+  }) => getHfStatus({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getHfStatus>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetHfStatusQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getHfStatus>>
+>;
+export type GetHfStatusQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get Hugging Face connection status
+ */
+
+export function useGetHfStatus<
+  TData = Awaited<ReturnType<typeof getHfStatus>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getHfStatus>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetHfStatusQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Re-verify the stored Hugging Face token
+ */
+export const getTestHfConnectionUrl = () => {
+  return `/api/integrations/hf/test`;
+};
+
+export const testHfConnection = async (
+  options?: RequestInit,
+): Promise<HfIntegrationStatus> => {
+  return customFetch<HfIntegrationStatus>(getTestHfConnectionUrl(), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getTestHfConnectionMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof testHfConnection>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof testHfConnection>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ["testHfConnection"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof testHfConnection>>,
+    void
+  > = () => {
+    return testHfConnection(requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type TestHfConnectionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof testHfConnection>>
+>;
+
+export type TestHfConnectionMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Re-verify the stored Hugging Face token
+ */
+export const useTestHfConnection = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof testHfConnection>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof testHfConnection>>,
+  TError,
+  void,
+  TContext
+> => {
+  return useMutation(getTestHfConnectionMutationOptions(options));
 };
 
 /**

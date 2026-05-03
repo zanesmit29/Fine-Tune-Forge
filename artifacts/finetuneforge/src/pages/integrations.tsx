@@ -31,12 +31,25 @@ import {
   useDisconnectModal,
   useTestModalConnection,
   getGetModalStatusQueryKey,
+  useGetHfStatus,
+  useConnectHf,
+  useDisconnectHf,
+  useTestHfConnection,
+  getGetHfStatusQueryKey,
 } from "@workspace/api-client-react";
 
 function ModalLogo() {
   return (
     <div className="w-10 h-10 rounded-md bg-[#0F172A] flex items-center justify-center text-white font-bold text-lg">
       M
+    </div>
+  );
+}
+
+function HuggingFaceLogo() {
+  return (
+    <div className="w-10 h-10 rounded-md bg-[#FFF7ED] border border-[#FED7AA] flex items-center justify-center text-xl">
+      🤗
     </div>
   );
 }
@@ -411,6 +424,334 @@ function ModalCard() {
   );
 }
 
+function HuggingFaceCard() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const statusKey = getGetHfStatusQueryKey();
+  const { data: status, isLoading } = useGetHfStatus();
+
+  const [token, setToken] = useState("");
+  const [showToken, setShowToken] = useState(false);
+  const [helpOpen, setHelpOpen] = useState<string | undefined>(undefined);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [testResult, setTestResult] = useState<
+    | { kind: "success"; message: string }
+    | { kind: "error"; message: string }
+    | null
+  >(null);
+
+  const connect = useConnectHf();
+  const disconnect = useDisconnectHf();
+  const test = useTestHfConnection();
+
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: statusKey });
+
+  const handleConnect = () => {
+    if (!token.trim()) return;
+    setTestResult(null);
+    connect.mutate(
+      { data: { token: token.trim() } },
+      {
+        onSuccess: () => {
+          toast({
+            title: "Hugging Face connected",
+            description: "Faster downloads and access to gated models.",
+          });
+          setToken("");
+          invalidate();
+        },
+        onError: (err) => {
+          const message =
+            err instanceof Error
+              ? err.message
+              : "Could not verify the token. Check it and try again.";
+          toast({
+            title: "Connection failed",
+            description: message,
+            variant: "destructive",
+          });
+        },
+      },
+    );
+  };
+
+  const handleDisconnect = () => {
+    disconnect.mutate(undefined, {
+      onSuccess: () => {
+        setConfirmOpen(false);
+        setTestResult(null);
+        toast({ title: "Hugging Face disconnected" });
+        invalidate();
+      },
+    });
+  };
+
+  const handleTest = () => {
+    setTestResult(null);
+    test.mutate(undefined, {
+      onSuccess: () => {
+        setTestResult({
+          kind: "success",
+          message: "Token is valid.",
+        });
+        invalidate();
+      },
+      onError: (err) => {
+        const message =
+          err instanceof Error
+            ? err.message
+            : "Hugging Face rejected the stored token.";
+        setTestResult({ kind: "error", message });
+      },
+    });
+  };
+
+  const connected = !!status?.connected;
+
+  return (
+    <Card
+      className="p-6 border border-[#E2E8F0] shadow-sm"
+      data-testid="card-integration-hf"
+    >
+      <div className="flex items-start justify-between gap-4 mb-5">
+        <div className="flex items-center gap-3">
+          <HuggingFaceLogo />
+          <div>
+            <div className="font-semibold text-[#0F172A] leading-tight">
+              Hugging Face Hub
+            </div>
+            <div className="text-sm text-[#64748B]">
+              Faster model downloads
+            </div>
+          </div>
+        </div>
+        {!isLoading && <StatusBadge connected={connected} />}
+      </div>
+
+      {connected ? (
+        <div className="space-y-4">
+          <div className="flex items-start gap-2 rounded-md bg-[#F0FDF4] border border-[#BBF7D0] text-[#166534] px-3 py-2.5 text-sm">
+            <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
+            <span>
+              Hugging Face connected. Downloads will use authenticated rate
+              limits and gated models become available.
+            </span>
+          </div>
+
+          <div className="text-sm space-y-1">
+            <div className="text-[#64748B]">
+              Account:{" "}
+              <span className="font-mono text-[#0F172A]">
+                {status?.username ?? "—"}
+              </span>
+            </div>
+            <div className="text-[#64748B]">
+              Token:{" "}
+              <span className="font-mono text-[#0F172A]">
+                {status?.maskedToken ?? "—"}
+              </span>
+            </div>
+            <div className="text-[#64748B]">
+              Last verified:{" "}
+              <span className="text-[#0F172A]">
+                {status?.verifiedAt
+                  ? new Date(status.verifiedAt).toLocaleString()
+                  : "—"}
+              </span>
+            </div>
+          </div>
+
+          {testResult && (
+            <div
+              className={`rounded-md border px-3 py-2 text-sm ${
+                testResult.kind === "success"
+                  ? "bg-[#F0FDF4] border-[#BBF7D0] text-[#166534]"
+                  : "bg-[#FEF2F2] border-[#FECACA] text-[#991B1B]"
+              }`}
+            >
+              {testResult.message}
+            </div>
+          )}
+
+          <div className="flex items-center gap-2 pt-1">
+            <Popover open={confirmOpen} onOpenChange={setConfirmOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="border-[#FECACA] text-[#B91C1C] hover:bg-[#FEF2F2] hover:text-[#991B1B]"
+                  data-testid="button-disconnect-hf"
+                >
+                  Disconnect
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-72" align="start">
+                <div className="space-y-3">
+                  <div className="text-sm font-semibold text-[#0F172A]">
+                    Disconnect Hugging Face?
+                  </div>
+                  <p className="text-sm text-[#64748B]">
+                    Your token will be cleared from this session. Downloads
+                    will fall back to anonymous (rate-limited) requests.
+                  </p>
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setConfirmOpen(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="bg-[#DC2626] hover:bg-[#B91C1C] text-white"
+                      onClick={handleDisconnect}
+                      disabled={disconnect.isPending}
+                      data-testid="button-confirm-disconnect-hf"
+                    >
+                      {disconnect.isPending ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        "Disconnect"
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            <Button
+              variant="ghost"
+              onClick={handleTest}
+              disabled={test.isPending}
+              data-testid="button-test-hf"
+            >
+              {test.isPending ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
+                  Testing...
+                </>
+              ) : (
+                "Test connection"
+              )}
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-5">
+          <p className="text-sm text-[#475569]">
+            Connect a Hugging Face access token to skip rate-limited anonymous
+            downloads and unlock gated models (Llama, Mistral, and others).
+            Optional — public models like GPT-2 still work without it.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-[#475569]">
+            <div className="flex items-start gap-2">
+              <Info className="w-4 h-4 mt-0.5 text-[#64748B] shrink-0" />
+              <span>Free — only a read-scope token needed</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <Info className="w-4 h-4 mt-0.5 text-[#64748B] shrink-0" />
+              <span>Higher download rate limits</span>
+            </div>
+          </div>
+
+          <a
+            href="https://huggingface.co/settings/tokens"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1 text-sm text-[#2563EB] hover:underline"
+            data-testid="link-hf-tokens"
+          >
+            Open Hugging Face → Access Tokens
+            <ExternalLink className="w-3.5 h-3.5" />
+          </a>
+
+          <div className="space-y-3 pt-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="hf-token">Hugging Face Token</Label>
+              <div className="relative">
+                <Input
+                  id="hf-token"
+                  type={showToken ? "text" : "password"}
+                  placeholder="hf_..."
+                  value={token}
+                  onChange={(e) => setToken(e.target.value)}
+                  className="pr-10"
+                  data-testid="input-hf-token"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowToken((v) => !v)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-[#64748B] hover:text-[#0F172A]"
+                  aria-label={showToken ? "Hide token" : "Show token"}
+                  data-testid="button-toggle-hf-token"
+                >
+                  {showToken ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <Accordion
+              type="single"
+              collapsible
+              value={helpOpen}
+              onValueChange={setHelpOpen}
+              className="border-none"
+            >
+              <AccordionItem value="help" className="border-none">
+                <AccordionTrigger className="py-2 text-sm text-[#64748B] hover:no-underline">
+                  Where do I find this?
+                </AccordionTrigger>
+                <AccordionContent className="text-sm text-[#64748B]">
+                  <ol className="list-decimal pl-5 space-y-1">
+                    <li>
+                      Go to{" "}
+                      <a
+                        href="https://huggingface.co/settings/tokens"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[#2563EB] hover:underline"
+                      >
+                        huggingface.co/settings/tokens
+                      </a>
+                    </li>
+                    <li>Click "Create new token"</li>
+                    <li>
+                      Choose "Read" access (sufficient for downloading models)
+                    </li>
+                    <li>Copy the token (starts with <code>hf_</code>) and paste it here</li>
+                  </ol>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </div>
+
+          <Button
+            className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white"
+            onClick={handleConnect}
+            disabled={connect.isPending || !token.trim()}
+            data-testid="button-connect-hf"
+          >
+            {connect.isPending ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Connecting...
+              </>
+            ) : (
+              "Connect Hugging Face"
+            )}
+          </Button>
+        </div>
+      )}
+    </Card>
+  );
+}
+
 function PrivacyInfoBox() {
   return (
     <div className="rounded-md bg-[#EFF6FF] border border-[#BFDBFE] p-4 flex items-start gap-3">
@@ -442,6 +783,8 @@ export default function Integrations() {
 
         <ModalCard />
 
+        <HuggingFaceCard />
+
         <PrivacyInfoBox />
 
         <div className="pt-2">
@@ -454,12 +797,12 @@ export default function Integrations() {
               description="Alternative GPU compute provider"
             />
             <ComingSoonCard
-              name="Hugging Face Hub"
-              description="Push trained models directly to your HF Hub repository"
-            />
-            <ComingSoonCard
               name="AWS S3"
               description="Store model exports in your own bucket"
+            />
+            <ComingSoonCard
+              name="Weights & Biases"
+              description="Stream training metrics to your W&B project"
             />
           </div>
         </div>

@@ -413,6 +413,52 @@ export const TestModalConnectionResponse = zod.object({
 });
 
 /**
+ * Stores a Hugging Face API token in the server session after verifying it against the HF Hub
+ * @summary Connect a Hugging Face account
+ */
+
+export const ConnectHfBody = zod.object({
+  token: zod.string().min(1),
+});
+
+export const ConnectHfResponse = zod.object({
+  connected: zod.boolean(),
+  maskedToken: zod.string().nullish(),
+  username: zod.string().nullish(),
+  verifiedAt: zod.coerce.date().nullish(),
+});
+
+/**
+ * @summary Disconnect the Hugging Face account
+ */
+export const DisconnectHfResponse = zod.object({
+  connected: zod.boolean(),
+  maskedToken: zod.string().nullish(),
+  username: zod.string().nullish(),
+  verifiedAt: zod.coerce.date().nullish(),
+});
+
+/**
+ * @summary Get Hugging Face connection status
+ */
+export const GetHfStatusResponse = zod.object({
+  connected: zod.boolean(),
+  maskedToken: zod.string().nullish(),
+  username: zod.string().nullish(),
+  verifiedAt: zod.coerce.date().nullish(),
+});
+
+/**
+ * @summary Re-verify the stored Hugging Face token
+ */
+export const TestHfConnectionResponse = zod.object({
+  connected: zod.boolean(),
+  maskedToken: zod.string().nullish(),
+  username: zod.string().nullish(),
+  verifiedAt: zod.coerce.date().nullish(),
+});
+
+/**
  * Returns summary counts and averages useful for dashboard display
  * @summary Aggregate stats across all jobs
  */

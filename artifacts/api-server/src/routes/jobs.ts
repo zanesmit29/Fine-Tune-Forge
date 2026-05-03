@@ -16,6 +16,7 @@ import {
 } from "@workspace/api-zod";
 import { logger } from "../lib/logger";
 import { getModalCreds } from "../lib/modalSession";
+import { getHfCreds } from "../lib/hfSession";
 
 const router: IRouter = Router();
 
@@ -161,6 +162,8 @@ async function runTraining(
   const hfCacheDir = path.resolve(__dirname, "..", ".hf-cache");
   const hfHubCache = path.join(hfCacheDir, "hub");
 
+  const hfCreds = getHfCreds();
+
   const proc = spawn("python3", args, {
     env: {
       ...process.env,
@@ -168,6 +171,7 @@ async function runTraining(
       PYTHONPATH: pythonPath,
       HF_HOME: process.env.HF_HOME ?? hfCacheDir,
       HF_HUB_CACHE: process.env.HF_HUB_CACHE ?? hfHubCache,
+      ...(hfCreds ? { HF_TOKEN: hfCreds.token } : {}),
       ...(modalCreds
         ? {
             MODAL_TOKEN_ID: modalCreds.tokenId,

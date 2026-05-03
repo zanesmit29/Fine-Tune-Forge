@@ -302,6 +302,81 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /integrations/hf:
+    post:
+      operationId: connectHf
+      tags: [integrations]
+      summary: Connect a Hugging Face account
+      description: Stores a Hugging Face API token in the server session after verifying it against the HF Hub
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConnectHfBody"
+      responses:
+        "200":
+          description: Connected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HfIntegrationStatus"
+        "400":
+          description: Invalid token format
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: HF Hub rejected the token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: disconnectHf
+      tags: [integrations]
+      summary: Disconnect the Hugging Face account
+      responses:
+        "200":
+          description: Disconnected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HfIntegrationStatus"
+
+  /integrations/hf/status:
+    get:
+      operationId: getHfStatus
+      tags: [integrations]
+      summary: Get Hugging Face connection status
+      responses:
+        "200":
+          description: Connection status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HfIntegrationStatus"
+
+  /integrations/hf/test:
+    post:
+      operationId: testHfConnection
+      tags: [integrations]
+      summary: Re-verify the stored Hugging Face token
+      responses:
+        "200":
+          description: Verified
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HfIntegrationStatus"
+        "401":
+          description: Not connected or token rejected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /jobs/stats/summary:
     get:
       operationId: getJobStats
@@ -537,6 +612,28 @@ components:
         connected:
           type: boolean
         maskedTokenId:
+          type: ["string", "null"]
+        verifiedAt:
+          type: ["string", "null"]
+          format: date-time
+
+    ConnectHfBody:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+          minLength: 1
+
+    HfIntegrationStatus:
+      type: object
+      required: [connected]
+      properties:
+        connected:
+          type: boolean
+        maskedToken:
+          type: ["string", "null"]
+        username:
           type: ["string", "null"]
         verifiedAt:
           type: ["string", "null"]

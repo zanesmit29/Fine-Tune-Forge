@@ -217,6 +217,21 @@ export interface ModalIntegrationStatus {
   verifiedAt?: string | null;
 }
 
+export interface ConnectHfBody {
+  /** @minLength 1 */
+  token: string;
+}
+
+export interface HfIntegrationStatus {
+  connected: boolean;
+  /** @nullable */
+  maskedToken?: string | null;
+  /** @nullable */
+  username?: string | null;
+  /** @nullable */
+  verifiedAt?: string | null;
+}
+
 export interface ErrorResponse {
   error: string;
 }
