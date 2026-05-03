@@ -300,6 +300,15 @@ components:
           type: ["number", "null"]
         errorMessage:
           type: ["string", "null"]
+        pklPath:
+          type: ["string", "null"]
+          description: Server-relative path to the .pkl export, or null if not available
+        onnxPath:
+          type: ["string", "null"]
+          description: Server-relative path to the .onnx export, or null if not available
+        ggufPath:
+          type: ["string", "null"]
+          description: Server-relative path to the .gguf export, or null if not available
 
     JobLogsResponse:
       type: object

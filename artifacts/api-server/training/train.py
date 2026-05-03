@@ -370,6 +370,16 @@ try:
     with open(os.path.join(args.output_dir, "metrics.json"), "w") as f:
         json.dump(metrics, f)
 
+    # ---- Multi-format exports (best-effort) -------------------------------
+    log("[FineTuneForge] Exporting additional formats...")
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    try:
+        from exports import export_onnx, export_gguf  # type: ignore
+        export_onnx(model, tokenizer, args.output_dir)
+        export_gguf(model, tokenizer, args.output_dir)
+    except Exception as _exp_err:  # noqa: BLE001
+        log(f"  [warn] Multi-format export step skipped: {_exp_err}")
+
     log(f"[FineTuneForge] DONE — train_loss={train_loss:.4f} eval_loss={eval_loss:.4f} accuracy={accuracy*100:.2f}%")
     sys.exit(0)
 

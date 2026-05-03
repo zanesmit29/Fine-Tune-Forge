@@ -10,6 +10,62 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2, Download, Code, CheckCircle2, XCircle, Cpu, Zap } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+
+type ExportFmt = "pkl" | "onnx" | "gguf";
+
+function ExportButton({
+  jobId,
+  format,
+  available,
+  tooltip,
+  primary,
+}: {
+  jobId: string;
+  format: ExportFmt;
+  available: boolean;
+  tooltip: string;
+  primary?: boolean;
+}) {
+  const label = `.${format}`;
+  const badge = format.toUpperCase();
+  const button = (
+    <Button
+      asChild={available}
+      variant={primary ? "default" : "outline"}
+      disabled={!available}
+      aria-disabled={!available}
+    >
+      {available ? (
+        <a href={`/api/jobs/${jobId}/download/${format}`} download>
+          <Download className="w-4 h-4 mr-2" />
+          Download {label}
+          <span className="ml-2 px-1.5 py-0.5 rounded border bg-muted/60 text-[10px] font-mono leading-none tracking-wide">
+            {badge}
+          </span>
+        </a>
+      ) : (
+        <span className="inline-flex items-center">
+          <Download className="w-4 h-4 mr-2" />
+          Download {label}
+          <span className="ml-2 px-1.5 py-0.5 rounded border bg-muted/60 text-[10px] font-mono leading-none tracking-wide">
+            {badge}
+          </span>
+        </span>
+      )}
+    </Button>
+  );
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className="inline-flex">{button}</span>
+      </TooltipTrigger>
+      <TooltipContent>
+        {available ? tooltip : `${tooltip} — not available for this job`}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
 
 export function StepTrain({ jobId }: { jobId: string | null }) {
   if (!jobId) return null;
@@ -137,7 +193,7 @@ export function StepTrain({ jobId }: { jobId: string | null }) {
       </Card>
 
       {isCompleted && (
-        <div className="flex justify-end gap-4 pt-4">
+        <div className="flex flex-wrap justify-end items-center gap-3 pt-4">
           <Dialog>
             <DialogTrigger asChild>
               <Button variant="outline" onClick={loadScript}>
@@ -156,11 +212,25 @@ export function StepTrain({ jobId }: { jobId: string | null }) {
             </DialogContent>
           </Dialog>
 
-          <Button asChild>
-            <a href={`/api/jobs/${jobId}/download/model`} download>
-              <Download className="w-4 h-4 mr-2" /> Download Model Weights
-            </a>
-          </Button>
+          <ExportButton
+            jobId={jobId}
+            format="pkl"
+            available={!!job?.pklPath}
+            tooltip="For Python & scikit-learn pipelines"
+            primary
+          />
+          <ExportButton
+            jobId={jobId}
+            format="onnx"
+            available={!!job?.onnxPath}
+            tooltip="For cross-platform inference (ONNX Runtime)"
+          />
+          <ExportButton
+            jobId={jobId}
+            format="gguf"
+            available={!!job?.ggufPath}
+            tooltip="For Ollama & LM Studio"
+          />
         </div>
       )}
     </div>

@@ -246,6 +246,43 @@ def train_remote(
     )
     model_bytes = buf.getvalue()
 
+    # -- Multi-format exports (best-effort) ---------------------------------
+    yield "[FineTuneForge] Exporting additional formats..."
+
+    onnx_bytes = None
+    try:
+        try:
+            export_model = model.merge_and_unload()
+        except Exception:
+            export_model = model
+        export_model.eval()
+        cpu_model = export_model.to("cpu")
+        pad_id = getattr(tokenizer, "pad_token_id", 0) or 0
+        dummy_ids = torch.full((1, 16), pad_id, dtype=torch.long)
+        dummy_mask = torch.ones((1, 16), dtype=torch.long)
+        onnx_buf = io.BytesIO()
+        with torch.no_grad():
+            torch.onnx.export(
+                cpu_model,
+                (dummy_ids, dummy_mask),
+                onnx_buf,
+                input_names=["input_ids", "attention_mask"],
+                output_names=["logits"],
+                dynamic_axes={
+                    "input_ids": {0: "batch", 1: "seq"},
+                    "attention_mask": {0: "batch", 1: "seq"},
+                    "logits": {0: "batch"},
+                },
+                opset_version=14,
+                do_constant_folding=True,
+            )
+        onnx_bytes = onnx_buf.getvalue()
+        yield f"  ONNX export OK ({len(onnx_bytes)} bytes)"
+    except Exception as e:  # noqa: BLE001
+        yield f"  [warn] ONNX export skipped: {e}"
+
+    # GGUF conversion is non-trivial inside the modal worker — skip and let
+    # the local CPU side attempt it from the saved HF model if needed.
     yield (
         f"[FineTuneForge] DONE — train_loss={train_loss:.4f} "
         f"eval_loss={eval_loss:.4f} accuracy={accuracy*100:.2f}%"
@@ -254,6 +291,7 @@ def train_remote(
     yield {
         "__result__": {
             "model_bytes": model_bytes,
+            "onnx_bytes": onnx_bytes,
             "metrics": {
                 "train_loss": train_loss,
                 "eval_loss": eval_loss,
@@ -313,6 +351,13 @@ def main() -> int:
     with open(model_path, "wb") as f:
         f.write(result["model_bytes"])
     _log(f"  Model saved → {model_path}")
+
+    onnx_bytes = result.get("onnx_bytes")
+    if onnx_bytes:
+        onnx_path = os.path.join(args.output_dir, "model.onnx")
+        with open(onnx_path, "wb") as f:
+            f.write(onnx_bytes)
+        _log(f"  ONNX saved → {onnx_path}")
 
     metrics_path = os.path.join(args.output_dir, "metrics.json")
     with open(metrics_path, "w") as f:

@@ -71,3 +71,17 @@ Available models (CPU + GPU unless noted):
 - `meta-llama/Llama-3.2-3B` + LoRA (3B, **GPU only**, ~7min)
 
 Server-side `POST /api/jobs` enforces model/computeMode compatibility (rejects GPU-only models in CPU mode with HTTP 400).
+
+## Multi-format Exports
+
+After training completes, the server attempts to write three artifacts in `results/{jobId}/`:
+- `model.pkl` — pickle of the LoRA-merged model state dict (always produced)
+- `model.onnx` — `torch.onnx.export` with dummy `(input_ids, attention_mask)` inputs (best-effort)
+- `model.gguf` — converted via llama.cpp's `convert_hf_to_gguf.py` (best-effort, downloaded once into `~/.cache/finetuneforge/`)
+
+Logic lives in `artifacts/api-server/training/exports.py` and is called from both `train.py` (CPU) and `modal_trainer.py` (GPU; GGUF skipped in remote worker). On training process exit, `jobs.ts` scans the results dir and stores the resolved paths in the new `pkl_path`, `onnx_path`, `gguf_path` columns. Download routes:
+- `GET /api/jobs/:jobId/download/pkl` (alias: `/download/model`)
+- `GET /api/jobs/:jobId/download/onnx`
+- `GET /api/jobs/:jobId/download/gguf`
+
+Each route validates the jobId via `GetJobParams` and additionally enforces `path.resolve(...)` is inside `RESULTS_DIR`. Returns 404 if the format isn't available. The Results step renders three side-by-side download buttons with monospace `PKL`/`ONNX`/`GGUF` badges and tooltips; unavailable formats are disabled with an explanatory tooltip.

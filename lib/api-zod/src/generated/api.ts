@@ -67,6 +67,24 @@ export const ListJobsResponseItem = zod.object({
   evalLoss: zod.number().nullish(),
   accuracy: zod.number().nullish(),
   errorMessage: zod.string().nullish(),
+  pklPath: zod
+    .string()
+    .nullish()
+    .describe(
+      "Server-relative path to the .pkl export, or null if not available",
+    ),
+  onnxPath: zod
+    .string()
+    .nullish()
+    .describe(
+      "Server-relative path to the .onnx export, or null if not available",
+    ),
+  ggufPath: zod
+    .string()
+    .nullish()
+    .describe(
+      "Server-relative path to the .gguf export, or null if not available",
+    ),
 });
 export const ListJobsResponse = zod.array(ListJobsResponseItem);
 
@@ -114,6 +132,24 @@ export const GetJobResponse = zod.object({
   evalLoss: zod.number().nullish(),
   accuracy: zod.number().nullish(),
   errorMessage: zod.string().nullish(),
+  pklPath: zod
+    .string()
+    .nullish()
+    .describe(
+      "Server-relative path to the .pkl export, or null if not available",
+    ),
+  onnxPath: zod
+    .string()
+    .nullish()
+    .describe(
+      "Server-relative path to the .onnx export, or null if not available",
+    ),
+  ggufPath: zod
+    .string()
+    .nullish()
+    .describe(
+      "Server-relative path to the .gguf export, or null if not available",
+    ),
 });
 
 /**

@@ -118,6 +118,21 @@ export interface TrainingJob {
   accuracy?: number | null;
   /** @nullable */
   errorMessage?: string | null;
+  /**
+   * Server-relative path to the .pkl export, or null if not available
+   * @nullable
+   */
+  pklPath?: string | null;
+  /**
+   * Server-relative path to the .onnx export, or null if not available
+   * @nullable
+   */
+  onnxPath?: string | null;
+  /**
+   * Server-relative path to the .gguf export, or null if not available
+   * @nullable
+   */
+  ggufPath?: string | null;
 }
 
 export interface JobLogsResponse {

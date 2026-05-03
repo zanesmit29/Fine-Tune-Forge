@@ -24,6 +24,30 @@ if (!fs.existsSync(RESULTS_DIR)) {
   fs.mkdirSync(RESULTS_DIR, { recursive: true });
 }
 
+const EXPORT_FILES = {
+  pkl: "model.pkl",
+  onnx: "model.onnx",
+  gguf: "model.gguf",
+} as const;
+type ExportFormat = keyof typeof EXPORT_FILES;
+
+function detectExportPaths(jobId: string): {
+  pklPath: string | null;
+  onnxPath: string | null;
+  ggufPath: string | null;
+} {
+  const dir = path.join(RESULTS_DIR, jobId);
+  const exists = (name: string) => {
+    const p = path.join(dir, name);
+    return fs.existsSync(p) ? p : null;
+  };
+  return {
+    pklPath: exists(EXPORT_FILES.pkl),
+    onnxPath: exists(EXPORT_FILES.onnx),
+    ggufPath: exists(EXPORT_FILES.gguf),
+  };
+}
+
 function formatJob(row: typeof trainingJobsTable.$inferSelect) {
   return {
     id: row.id,
@@ -44,6 +68,9 @@ function formatJob(row: typeof trainingJobsTable.$inferSelect) {
     evalLoss: row.evalLoss ?? null,
     accuracy: row.accuracy ?? null,
     errorMessage: row.errorMessage ?? null,
+    pklPath: row.pklPath ?? null,
+    onnxPath: row.onnxPath ?? null,
+    ggufPath: row.ggufPath ?? null,
   };
 }
 
@@ -152,6 +179,11 @@ async function runTraining(jobId: string, body: typeof CreateJobBody._type) {
       if (evalLoss !== null) await appendLog(jobId, `[FineTuneForge] Final eval loss: ${evalLoss.toFixed(4)}`);
       if (accuracy !== null) await appendLog(jobId, `[FineTuneForge] Accuracy: ${(accuracy * 100).toFixed(2)}%`);
 
+      const { pklPath, onnxPath, ggufPath } = detectExportPaths(jobId);
+      await appendLog(
+        jobId,
+        `[FineTuneForge] Exports — pkl:${pklPath ? "ok" : "—"} onnx:${onnxPath ? "ok" : "—"} gguf:${ggufPath ? "ok" : "—"}`,
+      );
       await db
         .update(trainingJobsTable)
         .set({
@@ -160,6 +192,9 @@ async function runTraining(jobId: string, body: typeof CreateJobBody._type) {
           trainLoss,
           evalLoss,
           accuracy,
+          pklPath,
+          onnxPath,
+          ggufPath,
         })
         .where(eq(trainingJobsTable.id, jobId));
     } else {
@@ -334,31 +369,66 @@ router.get("/jobs/:jobId/logs", async (req, res): Promise<void> => {
   res.json(GetJobLogsResponse.parse({ jobId: params.data.jobId, lines, status: job.status }));
 });
 
-router.get("/jobs/:jobId/download/model", async (req, res): Promise<void> => {
-  const raw = Array.isArray(req.params.jobId) ? req.params.jobId[0] : req.params.jobId;
-  const outputDir = path.join(RESULTS_DIR, raw);
-  const modelFile = path.join(outputDir, "model.pkl");
+function serveExport(format: ExportFormat) {
+  return async (req: import("express").Request, res: import("express").Response): Promise<void> => {
+    const raw = Array.isArray(req.params.jobId) ? req.params.jobId[0] : req.params.jobId;
+    const params = GetJobParams.safeParse({ jobId: raw });
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    const jobId = params.data.jobId;
+    const fileName = EXPORT_FILES[format];
+    const outputDir = path.join(RESULTS_DIR, jobId);
+    const filePath = path.join(outputDir, fileName);
 
-  if (!fs.existsSync(modelFile)) {
-    res.status(404).json({ error: "Model file not found. Training may not be complete." });
-    return;
-  }
+    // Defense-in-depth: ensure resolved path stays within RESULTS_DIR.
+    const resolved = path.resolve(filePath);
+    if (!resolved.startsWith(path.resolve(RESULTS_DIR) + path.sep)) {
+      res.status(400).json({ error: "Invalid job id" });
+      return;
+    }
 
-  res.download(modelFile, `finetuned_model_${raw.slice(0, 8)}.pkl`);
-});
+    if (!fs.existsSync(resolved)) {
+      res.status(404).json({
+        error: `${format.toUpperCase()} export not available for this job.`,
+      });
+      return;
+    }
+
+    res.download(resolved, `finetuned_model_${jobId.slice(0, 8)}.${format}`);
+  };
+}
+
+// Existing route kept for backward compatibility — aliases /download/pkl.
+router.get("/jobs/:jobId/download/model", serveExport("pkl"));
+router.get("/jobs/:jobId/download/pkl", serveExport("pkl"));
+router.get("/jobs/:jobId/download/onnx", serveExport("onnx"));
+router.get("/jobs/:jobId/download/gguf", serveExport("gguf"));
 
 router.get("/jobs/:jobId/download/script", async (req, res): Promise<void> => {
   const raw = Array.isArray(req.params.jobId) ? req.params.jobId[0] : req.params.jobId;
-  const outputDir = path.join(RESULTS_DIR, raw);
+  const params = GetJobParams.safeParse({ jobId: raw });
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const jobId = params.data.jobId;
+  const outputDir = path.join(RESULTS_DIR, jobId);
   const scriptFile = path.join(outputDir, "train_script.py");
+  const resolved = path.resolve(scriptFile);
+  if (!resolved.startsWith(path.resolve(RESULTS_DIR) + path.sep)) {
+    res.status(400).json({ error: "Invalid job id" });
+    return;
+  }
 
-  if (!fs.existsSync(scriptFile)) {
+  if (!fs.existsSync(resolved)) {
     res.status(404).json({ error: "Training script not found. Training may not be complete." });
     return;
   }
 
   res.setHeader("Content-Type", "text/plain");
-  res.download(scriptFile, `train_${raw.slice(0, 8)}.py`);
+  res.download(resolved, `train_${jobId.slice(0, 8)}.py`);
 });
 
 export default router;
