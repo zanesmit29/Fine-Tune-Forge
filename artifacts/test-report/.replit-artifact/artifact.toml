@@ -1,0 +1,31 @@
+kind = "slides"
+previewPath = "/test-report/"
+title = "FineTuneForge Test Report"
+version = "1.0.0"
+id = "artifacts/test-report"
+router = "path"
+
+[[integratedSkills]]
+name = "slides"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/test-report/" ]
+localPort = 25586
+
+[services.development]
+run = "pnpm --filter @workspace/test-report run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/test-report", "run", "build" ]
+publicDir = "artifacts/test-report/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25586"
+BASE_PATH = "/test-report/"
