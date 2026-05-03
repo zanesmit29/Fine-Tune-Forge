@@ -3,3 +3,6 @@ artifacts/api-server/results/e5e336a6-f7d8-402d-8ebd-2ef22221fcc2/_hf_export/mod
 artifacts/api-server/results/e5e336a6-f7d8-402d-8ebd-2ef22221fcc2/model.onnx filter=lfs diff=lfs merge=lfs -text
 artifacts/api-server/results/e5e336a6-f7d8-402d-8ebd-2ef22221fcc2/model.pkl filter=lfs diff=lfs merge=lfs -text
 artifacts/api-server/results/07a8e4ee-4926-47b7-985b-9a0178acdc3c/model.pkl filter=lfs diff=lfs merge=lfs -text
+artifacts/api-server/results/72109b2d-eea2-4f30-aeeb-884a2300a1e2/_hf_export/model.safetensors filter=lfs diff=lfs merge=lfs -text
+artifacts/api-server/results/72109b2d-eea2-4f30-aeeb-884a2300a1e2/model.gguf filter=lfs diff=lfs merge=lfs -text
+artifacts/api-server/results/72109b2d-eea2-4f30-aeeb-884a2300a1e2/model.pkl filter=lfs diff=lfs merge=lfs -text
