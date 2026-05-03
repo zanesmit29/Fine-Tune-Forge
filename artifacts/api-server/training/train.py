@@ -35,6 +35,12 @@ parser.add_argument("--epochs", type=int, default=1)
 parser.add_argument("--lr", type=float, default=2e-4)
 parser.add_argument("--lora-rank", type=int, default=8)
 parser.add_argument("--output-dir", required=True)
+parser.add_argument("--task-type", default="classification",
+                    choices=["classification", "instruction"],
+                    help="Task type. Currently only 'classification' is implemented; "
+                         "'instruction' is accepted for forward compatibility.")
+parser.add_argument("--max-seq-length", type=int, default=128,
+                    help="Max token sequence length for tokenization.")
 args = parser.parse_args()
 
 os.makedirs(args.output_dir, exist_ok=True)
@@ -273,7 +279,7 @@ try:
             batch[args.text_column],
             truncation=True,
             padding="max_length",
-            max_length=128,
+            max_length=args.max_seq_length,
         )
 
     train_dataset = Dataset.from_pandas(train_df[[args.text_column, "encoded_label"]])
