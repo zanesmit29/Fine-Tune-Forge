@@ -193,7 +193,7 @@ export default function History() {
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
 
   return (
-    <Layout>
+    <Layout title="History" breadcrumb="History">
       <div className="space-y-8">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Training History</h1>

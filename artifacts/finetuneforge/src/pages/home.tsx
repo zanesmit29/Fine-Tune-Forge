@@ -1,11 +1,13 @@
-import { useLocation } from "wouter";
 import { Layout } from "@/components/layout";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft } from "lucide-react";
+import { Check, ChevronLeft } from "lucide-react";
 import { useCreateJob } from "@workspace/api-client-react";
-import { DatasetPreview, CreateJobBodyLoraRank, CreateJobBodyComputeMode } from "@workspace/api-client-react";
+import {
+  DatasetPreview,
+  CreateJobBodyLoraRank,
+  CreateJobBodyComputeMode,
+} from "@workspace/api-client-react";
 import { StepModel } from "@/components/wizard/step-model";
 import { StepData } from "@/components/wizard/step-data";
 import { StepConfig } from "@/components/wizard/step-config";
@@ -29,7 +31,9 @@ export interface WizardState {
 
 const STEPS = ["Model", "Data", "Config", "Train"];
 
-function computeClassDistribution(state: WizardState): { label: string; count: number }[] | null {
+function computeClassDistribution(
+  state: WizardState,
+): { label: string; count: number }[] | null {
   if (!state.datasetPreview || !state.labelColumn) return null;
   const counts = new Map<string, number>();
   for (const row of state.datasetPreview.previewRows) {
@@ -39,9 +43,9 @@ function computeClassDistribution(state: WizardState): { label: string; count: n
     counts.set(key, (counts.get(key) ?? 0) + 1);
   }
   if (counts.size === 0) return null;
-  // Scale preview-row counts up to total dataset size proportionally
   const previewTotal = Array.from(counts.values()).reduce((a, b) => a + b, 0);
-  const scale = previewTotal > 0 ? state.datasetPreview.rowCount / previewTotal : 1;
+  const scale =
+    previewTotal > 0 ? state.datasetPreview.rowCount / previewTotal : 1;
   return Array.from(counts.entries())
     .map(([label, count]) => ({ label, count: Math.round(count * scale) }))
     .sort((a, b) => b.count - a.count);
@@ -57,9 +61,71 @@ interface HomeProps {
   onTrainingStarted?: () => void;
 }
 
-export default function Home({ step, setStep, state, setState, onSelectTaskType, onResetTaskType, onTrainingStarted }: HomeProps) {
+function StepIndicator({ step }: { step: number }) {
+  return (
+    <div className="hidden md:block w-[200px] shrink-0 border-r border-[#E2E8F0] py-8 pl-6 pr-4">
+      <ol className="relative space-y-6">
+        {STEPS.map((label, i) => {
+          const stepNum = i + 1;
+          const isCompleted = step > stepNum;
+          const isActive = step === stepNum;
+          const isLast = i === STEPS.length - 1;
+          return (
+            <li key={label} className="relative flex items-start gap-3">
+              {!isLast && (
+                <span
+                  className={`absolute left-[11px] top-6 w-px h-8 ${
+                    isCompleted ? "bg-[#2563EB]" : "bg-[#E2E8F0]"
+                  }`}
+                  aria-hidden="true"
+                />
+              )}
+              <span
+                className={`relative z-10 flex items-center justify-center w-6 h-6 rounded-full text-[11px] font-semibold shrink-0 ${
+                  isCompleted
+                    ? "bg-[#2563EB] text-white"
+                    : isActive
+                    ? "bg-white border-2 border-[#2563EB] text-[#2563EB]"
+                    : "bg-white border border-[#CBD5E1] text-[#94A3B8]"
+                }`}
+              >
+                {isCompleted ? (
+                  <Check className="w-3.5 h-3.5" strokeWidth={3} />
+                ) : (
+                  stepNum
+                )}
+              </span>
+              <div className="pt-0.5">
+                <div
+                  className={`text-sm font-medium ${
+                    isActive
+                      ? "text-[#0F172A]"
+                      : isCompleted
+                      ? "text-[#475569]"
+                      : "text-[#94A3B8]"
+                  }`}
+                >
+                  {label}
+                </div>
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
+  );
+}
+
+export default function Home({
+  step,
+  setStep,
+  state,
+  setState,
+  onSelectTaskType,
+  onResetTaskType,
+  onTrainingStarted,
+}: HomeProps) {
   const createJob = useCreateJob();
-  const [, setLocation] = useLocation();
 
   const handleNext = () => {
     if (step < 4) setStep(step + 1);
@@ -70,7 +136,13 @@ export default function Home({ step, setStep, state, setState, onSelectTaskType,
   };
 
   const handleStartTraining = () => {
-    if (!state.modelId || !state.datasetPreview || !state.textColumn || !state.labelColumn) return;
+    if (
+      !state.modelId ||
+      !state.datasetPreview ||
+      !state.textColumn ||
+      !state.labelColumn
+    )
+      return;
 
     createJob.mutate(
       {
@@ -93,7 +165,7 @@ export default function Home({ step, setStep, state, setState, onSelectTaskType,
           setStep(4);
           onTrainingStarted?.();
         },
-      }
+      },
     );
   };
 
@@ -102,89 +174,68 @@ export default function Home({ step, setStep, state, setState, onSelectTaskType,
   };
 
   if (step === 0 || !state.taskType) {
-    return <TaskSelector selected={state.taskType} onSelect={onSelectTaskType} />;
+    return (
+      <TaskSelector selected={state.taskType} onSelect={onSelectTaskType} />
+    );
   }
 
   const task = getTaskType(state.taskType);
-  const progress = ((step - 1) / (STEPS.length - 1)) * 100;
+  const breadcrumb = `New Fine-Tune / ${task?.name ?? "Fine-Tune"} / Step ${step} of ${STEPS.length}`;
 
   return (
-    <Layout>
-      <div className="max-w-4xl mx-auto space-y-8">
-        <div className="space-y-4">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div className="flex items-center gap-3 flex-wrap">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 px-2 -ml-2 text-muted-foreground hover:text-foreground"
-                onClick={onResetTaskType}
-                data-testid="button-change-task"
-              >
-                <ChevronLeft className="w-4 h-4 mr-1" />
-                Change task
-              </Button>
-              {task && (
-                <Badge
-                  variant="outline"
-                  className="bg-primary/5 border-primary/30 text-primary font-medium"
-                >
-                  {task.name}
-                </Badge>
+    <Layout title="New Fine-Tune" breadcrumb={breadcrumb}>
+      <div className="max-w-[900px] mx-auto">
+        <div className="mb-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 px-2 -ml-2 text-[#64748B] hover:text-[#0F172A]"
+            onClick={onResetTaskType}
+            data-testid="button-change-task"
+          >
+            <ChevronLeft className="w-4 h-4 mr-1" />
+            Change task
+          </Button>
+        </div>
+
+        <Card className="bg-white border border-[#E2E8F0] shadow-sm overflow-hidden">
+          <div className="flex">
+            <StepIndicator step={step} />
+            <div className="flex-1 p-8 min-w-0">
+              {step === 1 && (
+                <StepModel
+                  state={state}
+                  updateState={updateState}
+                  onNext={handleNext}
+                />
               )}
-              <span className="text-sm text-muted-foreground">
-                Step {step} of {STEPS.length}
-              </span>
+              {step === 2 && (
+                <StepData
+                  state={state}
+                  updateState={updateState}
+                  onNext={handleNext}
+                  onBack={handleBack}
+                />
+              )}
+              {step === 3 && (
+                <StepConfig
+                  state={state}
+                  updateState={updateState}
+                  onBack={handleBack}
+                  onStart={handleStartTraining}
+                  isPending={createJob.isPending}
+                />
+              )}
+              {step === 4 && (
+                <StepTrain
+                  jobId={state.jobId}
+                  taskType={state.taskType}
+                  classDistribution={computeClassDistribution(state)}
+                />
+              )}
             </div>
           </div>
-
-          <h1 className="text-3xl font-bold tracking-tight">
-            {task?.name ?? "Fine-tune a Model"}
-          </h1>
-
-          <div className="relative">
-            <Progress value={progress} className="h-2" />
-            <div className="absolute top-4 left-0 right-0 flex justify-between px-1">
-              {STEPS.map((label, i) => {
-                const stepNum = i + 1;
-                const isCompleted = step > stepNum;
-                const isCurrent = step === stepNum;
-                return (
-                  <div
-                    key={label}
-                    className={`text-xs font-medium -translate-x-1/2 ${
-                      isCurrent ? "text-primary" : isCompleted ? "text-primary/70" : "text-muted-foreground"
-                    }`}
-                    style={{ left: `${(i / (STEPS.length - 1)) * 100}%`, position: i === 0 || i === STEPS.length - 1 ? 'static' : 'absolute' }}
-                  >
-                    {label}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-12 min-h-[400px]">
-          {step === 1 && <StepModel state={state} updateState={updateState} onNext={handleNext} />}
-          {step === 2 && <StepData state={state} updateState={updateState} onNext={handleNext} onBack={handleBack} />}
-          {step === 3 && (
-            <StepConfig
-              state={state}
-              updateState={updateState}
-              onBack={handleBack}
-              onStart={handleStartTraining}
-              isPending={createJob.isPending}
-            />
-          )}
-          {step === 4 && (
-            <StepTrain
-              jobId={state.jobId}
-              taskType={state.taskType}
-              classDistribution={computeClassDistribution(state)}
-            />
-          )}
-        </div>
+        </Card>
       </div>
     </Layout>
   );

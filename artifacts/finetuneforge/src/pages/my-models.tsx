@@ -46,6 +46,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { useNavHighlight } from "@/lib/nav-highlight";
 import { TASK_TYPES } from "@/lib/task-types";
@@ -110,9 +111,9 @@ function ComputeBadge({ mode }: { mode: "cpu" | "gpu" }) {
 
 function AccuracyCell({ accuracy }: { accuracy: number | null }) {
   const { color, fill } = accuracyTone(accuracy);
-  if (accuracy == null) return <span className="text-muted-foreground">—</span>;
+  if (accuracy == null) return <span className="text-muted-foreground font-mono">—</span>;
   return (
-    <span className={`inline-flex items-center gap-2 ${color} font-medium`}>
+    <span className={`inline-flex items-center gap-2 ${color} font-medium font-mono text-sm`}>
       <span className={`inline-block w-2 h-2 rounded-full ${fill}`} />
       {(accuracy * 100).toFixed(1)}%
     </span>
@@ -349,11 +350,11 @@ export default function MyModels() {
     queryClient.invalidateQueries({ queryKey: getListTrainedModelsQueryKey() });
 
   return (
-    <Layout>
-      <div className="space-y-8">
+    <Layout title="My Models" breadcrumb={`My Models${sorted.length ? ` / ${sorted.length}` : ""}`}>
+      <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">My Models</h1>
-          <p className="text-muted-foreground mt-2">
+          <h2 className="text-lg font-semibold text-[#0F172A]">Trained Models</h2>
+          <p className="text-sm text-[#64748B] mt-1">
             {isLoading
               ? "Loading…"
               : `${sorted.length} model${sorted.length === 1 ? "" : "s"} trained`}
@@ -382,10 +383,10 @@ export default function MyModels() {
         ) : (
           <>
             {/* Desktop table */}
-            <Card className="hidden md:block overflow-hidden">
+            <Card className="hidden md:block overflow-hidden border border-[#E2E8F0] shadow-sm">
               <Table>
-                <TableHeader>
-                  <TableRow>
+                <TableHeader className="sticky top-0 bg-[#F8FAFC] z-10">
+                  <TableRow className="hover:bg-transparent border-b border-[#E2E8F0]">
                     <TableHead>Name</TableHead>
                     <SortHeader
                       label="Task"
@@ -415,8 +416,13 @@ export default function MyModels() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {sorted.map((job) => (
-                    <TableRow key={job.id} className="hover:bg-muted/40 transition-colors">
+                  {sorted.map((job, idx) => (
+                    <TableRow
+                      key={job.id}
+                      className={`h-[52px] transition-colors hover:!bg-[#F1F5F9] ${
+                        idx % 2 === 0 ? "bg-white" : "bg-[#F8FAFC]"
+                      }`}
+                    >
                       <TableCell>
                         <NicknameCell job={job} onSaved={refetch} />
                       </TableCell>
@@ -439,9 +445,19 @@ export default function MyModels() {
                         {format(new Date(job.createdAt), "MMM d, yyyy")}
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="inline-flex items-center gap-1.5">
-                          <DownloadMenu jobId={job.id} />
-                          <DeleteButton job={job} onDeleted={refetch} />
+                        <div className="inline-flex items-center gap-1">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="inline-flex"><DownloadMenu jobId={job.id} /></span>
+                            </TooltipTrigger>
+                            <TooltipContent>Download model</TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="inline-flex"><DeleteButton job={job} onDeleted={refetch} /></span>
+                            </TooltipTrigger>
+                            <TooltipContent>Delete model</TooltipContent>
+                          </Tooltip>
                         </div>
                       </TableCell>
                     </TableRow>

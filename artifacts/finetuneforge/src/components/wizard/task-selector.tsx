@@ -1,5 +1,5 @@
 import { Layout } from "@/components/layout";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Check } from "lucide-react";
 import { TASK_TYPES, type TaskTypeId } from "@/lib/task-types";
@@ -12,13 +12,15 @@ export function TaskSelector({
   onSelect: (id: TaskTypeId) => void;
 }) {
   return (
-    <Layout>
-      <div className="max-w-5xl mx-auto space-y-8">
+    <Layout title="New Fine-Tune" breadcrumb="New Fine-Tune / Choose a task">
+      <div className="max-w-6xl space-y-8">
         <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">What do you want to fine-tune?</h1>
-          <p className="text-muted-foreground">
-            Pick a task type to get started. We'll pre-configure the wizard with the right
-            models and dataset templates.
+          <h2 className="text-lg font-semibold text-[#0F172A]">
+            What do you want to fine-tune?
+          </h2>
+          <p className="text-sm text-[#64748B]">
+            Pick a task type to get started. We'll pre-configure the wizard
+            with the right models and dataset templates.
           </p>
         </div>
 
@@ -26,69 +28,62 @@ export function TaskSelector({
           {TASK_TYPES.map((task) => {
             const Icon = task.icon;
             const isSelected = selected === task.id;
+            const disabled = !task.available;
+
             const baseClasses =
-              "relative h-full transition-all duration-200 group";
-            const availableClasses = isSelected
-              ? "cursor-pointer border-primary ring-2 ring-primary/30 shadow-md"
-              : "cursor-pointer border-border hover:border-primary hover:shadow-md hover:-translate-y-0.5";
-            const disabledClasses =
-              "border-2 border-dashed border-muted-foreground/30 bg-muted/20 opacity-70 cursor-not-allowed";
+              "relative h-full p-5 transition-all duration-150 bg-white border";
+            const stateClasses = disabled
+              ? "border-[#E2E8F0] opacity-50 cursor-not-allowed"
+              : isSelected
+              ? "border-[#2563EB] ring-1 ring-[#2563EB] shadow-md cursor-pointer"
+              : "border-[#E2E8F0] shadow-sm cursor-pointer hover:-translate-y-0.5 hover:shadow-md hover:border-[#CBD5E1]";
 
             return (
               <Card
                 key={task.id}
                 onClick={() => task.available && onSelect(task.id)}
-                className={`${baseClasses} ${
-                  task.available ? availableClasses : disabledClasses
-                }`}
+                className={`${baseClasses} ${stateClasses}`}
                 data-testid={`card-task-${task.id}`}
               >
-                {isSelected && task.available && (
-                  <div className="absolute top-3 right-3 bg-primary text-primary-foreground rounded-full p-1 shadow">
-                    <Check className="w-3.5 h-3.5" strokeWidth={3} />
-                  </div>
-                )}
-                {!task.available && (
+                {disabled && (
                   <div className="absolute top-3 right-3">
-                    <Badge variant="secondary" className="bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border-0 text-[10px] uppercase tracking-wide">
+                    <Badge
+                      variant="secondary"
+                      className="bg-[#F1F5F9] text-[#64748B] border-0 text-[10px] uppercase tracking-wide font-medium"
+                    >
                       Coming Soon
                     </Badge>
                   </div>
                 )}
-                <CardContent className="p-6 space-y-3">
+                {isSelected && !disabled && (
+                  <div className="absolute top-3 right-3 bg-[#2563EB] text-white rounded-full p-1">
+                    <Check className="w-3 h-3" strokeWidth={3} />
+                  </div>
+                )}
+                <div className="flex items-start gap-4">
                   <div
-                    className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                      task.available
-                        ? "bg-primary/10 text-primary"
-                        : "bg-slate-200/60 dark:bg-slate-800/60 text-[#9CA3AF]"
+                    className={`w-12 h-12 rounded-md flex items-center justify-center shrink-0 ${
+                      disabled ? "bg-[#F1F5F9]" : "bg-[#EFF6FF]"
                     }`}
                   >
-                    <Icon className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3
-                      className={`font-semibold text-base ${
-                        task.available ? "" : "text-[#9CA3AF]"
+                    <Icon
+                      className={`w-6 h-6 ${
+                        disabled ? "text-[#94A3B8]" : "text-[#2563EB]"
                       }`}
-                    >
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-base font-semibold text-[#0F172A]">
                       {task.name}
                     </h3>
-                    <p
-                      className={`text-sm mt-1 ${
-                        task.available ? "text-muted-foreground" : "text-[#9CA3AF]"
-                      }`}
-                    >
+                    <p className="text-sm text-[#64748B] mt-1 leading-snug">
                       {task.description}
                     </p>
+                    <p className="text-xs text-[#94A3B8] mt-3">
+                      e.g. {task.example}
+                    </p>
                   </div>
-                  <p
-                    className={`text-xs italic ${
-                      task.available ? "text-muted-foreground/80" : "text-[#9CA3AF]"
-                    }`}
-                  >
-                    e.g. {task.example}
-                  </p>
-                </CardContent>
+                </div>
               </Card>
             );
           })}

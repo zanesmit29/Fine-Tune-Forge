@@ -330,24 +330,59 @@ export function StepTrain({
         </div>
       )}
 
-      <Card className="border border-border shadow-sm overflow-hidden bg-white dark:bg-zinc-950 flex flex-col">
-        <div className="border-b bg-muted/40 px-4 py-2 flex items-center justify-between text-xs font-medium text-muted-foreground">
-          <span className="flex items-center gap-2"><Code className="w-4 h-4" /> Terminal Output</span>
-          <span>{logs?.lines?.length || 0} lines</span>
+      <div className="rounded-lg border border-[#1E293B] overflow-hidden flex flex-col shadow-sm">
+        <div className="bg-[#0B1220] border-b border-[#1E293B] px-4 py-2 flex items-center justify-between text-xs font-medium text-[#94A3B8]">
+          <span className="flex items-center gap-2">
+            <Code className="w-4 h-4" /> Terminal Output
+          </span>
+          <span className="font-mono">{logs?.lines?.length || 0} lines</span>
         </div>
-        <div className="p-4 h-[400px] overflow-y-auto font-mono text-sm terminal-log bg-white dark:bg-black text-slate-800 dark:text-slate-300">
+        <div className="ide-terminal p-4 h-[400px] overflow-y-auto">
           {!logs?.lines?.length ? (
-            <div className="text-muted-foreground/50 italic">Waiting for logs...</div>
+            <div className="text-[#475569] italic font-mono text-sm">
+              Waiting for logs...
+            </div>
           ) : (
-            logs.lines.map((line, i) => (
-              <div key={i} className="whitespace-pre-wrap leading-relaxed animate-in fade-in duration-300">
-                {line}
-              </div>
-            ))
+            logs.lines.map((line, i) => {
+              const lower = line.toLowerCase();
+              const isError =
+                lower.includes("error") ||
+                lower.includes("failed") ||
+                lower.includes("traceback");
+              const isSuccess =
+                lower.includes("completed") ||
+                lower.includes("success") ||
+                lower.includes("✓") ||
+                lower.includes("done");
+              const tsMatch = line.match(/^(\[?\d{2}:\d{2}:\d{2}[^\]]*\]?)/);
+              return (
+                <div
+                  key={i}
+                  className={`ide-line whitespace-pre-wrap animate-in fade-in duration-300 ${
+                    isError
+                      ? "ide-line-error"
+                      : isSuccess
+                      ? "ide-line-success"
+                      : ""
+                  }`}
+                >
+                  <span>
+                    {tsMatch ? (
+                      <>
+                        <span className="ide-ts">{tsMatch[1]}</span>
+                        {line.slice(tsMatch[1].length)}
+                      </>
+                    ) : (
+                      line
+                    )}
+                  </span>
+                </div>
+              );
+            })
           )}
           <div ref={logEndRef} />
         </div>
-      </Card>
+      </div>
 
       {isCompleted && (
         <div className="flex flex-wrap justify-end items-center gap-3 pt-4">

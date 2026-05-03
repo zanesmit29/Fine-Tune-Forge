@@ -51,49 +51,79 @@
 }
 
 :root {
-  --button-outline: rgba(0,0,0, .10);
+  --button-outline: rgba(0,0,0, .08);
   --badge-outline: rgba(0,0,0, .05);
   --opaque-button-border-intensity: -8;
   --elevate-1: rgba(0,0,0, .03);
   --elevate-2: rgba(0,0,0, .08);
 
-  --background: 0 0% 98%; /* #FAFAFA */
-  --foreground: 222 47% 11%;
-  
-  --border: 214 32% 91%; /* #E2E8F0 */
+  /* Enterprise palette */
+  --color-bg: #F8FAFC;
+  --color-surface: #FFFFFF;
+  --color-border-hex: #E2E8F0;
+  --color-text: #0F172A;
+  --color-text-muted: #64748B;
+  --color-primary-hex: #2563EB;
+  --color-primary-hover: #1D4ED8;
+  --color-accent-bg: #EFF6FF;
+
+  /* HSL tokens used by shadcn components */
+  --background: 210 40% 98%;       /* #F8FAFC */
+  --foreground: 222 47% 11%;       /* #0F172A */
+
+  --border: 214 32% 91%;           /* #E2E8F0 */
   --input: 214 32% 91%;
-  --ring: 142 71% 36%;
-  
+  --ring: 217 91% 60%;             /* blue ring */
+
   --card: 0 0% 100%;
   --card-foreground: 222 47% 11%;
   --card-border: 214 32% 91%;
-  
+
   --popover: 0 0% 100%;
   --popover-foreground: 222 47% 11%;
   --popover-border: 214 32% 91%;
-  
-  --primary: 142 71% 36%; /* emerald-600 green */
+
+  --primary: 217 91% 53%;          /* #2563EB */
   --primary-foreground: 0 0% 100%;
-  
+
   --secondary: 210 40% 96.1%;
   --secondary-foreground: 222.2 47.4% 11.2%;
-  
+
   --muted: 210 40% 96.1%;
   --muted-foreground: 215 16% 47%; /* #64748B */
-  
-  --accent: 210 40% 96.1%;
-  --accent-foreground: 222.2 47.4% 11.2%;
-  
+
+  --accent: 213 100% 96%;          /* #EFF6FF */
+  --accent-foreground: 217 91% 40%;
+
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 210 40% 98%;
 
   --app-font-sans: 'Inter', sans-serif;
   --app-font-mono: 'JetBrains Mono', monospace;
   --radius: 0.5rem;
-  
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+
+  /* Spacing scale */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+
+  /* Type scale */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.04);
+  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.08), 0 1px 2px -1px rgb(0 0 0 / 0.06);
+  --shadow-md: 0 4px 8px -2px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.05);
 
   --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
   --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
@@ -107,14 +137,14 @@
   --foreground: 210 40% 98%;
   --border: 217.2 32.6% 17.5%;
   --input: 217.2 32.6% 17.5%;
-  --ring: 142 71% 36%;
+  --ring: 217 91% 60%;
   --card: 222.2 84% 4.9%;
   --card-foreground: 210 40% 98%;
   --card-border: 217.2 32.6% 17.5%;
   --popover: 222.2 84% 4.9%;
   --popover-foreground: 210 40% 98%;
   --popover-border: 217.2 32.6% 17.5%;
-  --primary: 142 71% 42%;
+  --primary: 217 91% 60%;
   --primary-foreground: 0 0% 100%;
   --secondary: 217.2 32.6% 17.5%;
   --secondary-foreground: 210 40% 98%;
@@ -132,16 +162,31 @@
   }
   body {
     @apply font-sans antialiased bg-background text-foreground;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
-  
-  .terminal-log {
+
+  /* IDE-style training terminal */
+  .ide-terminal {
+    background: #0F172A;
+    color: #E2E8F0;
     counter-reset: line;
+    font-family: var(--app-font-mono);
+    font-size: var(--text-sm);
   }
-  .terminal-log > div {
+  .ide-terminal > .ide-line {
     counter-increment: line;
+    display: grid;
+    grid-template-columns: 2.5rem 1fr;
+    column-gap: 1rem;
+    line-height: 1.55;
   }
-  .terminal-log > div::before {
+  .ide-terminal > .ide-line::before {
     content: counter(line);
-    @apply inline-block w-8 text-right mr-4 text-muted-foreground/50 select-none;
+    color: #475569;
+    text-align: right;
+    user-select: none;
   }
+  .ide-terminal .ide-ts { color: #64748B; }
+  .ide-terminal .ide-line-error { color: #F87171; }
+  .ide-terminal .ide-line-success { color: #4ADE80; }
 }
