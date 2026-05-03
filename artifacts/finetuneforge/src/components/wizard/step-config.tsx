@@ -5,8 +5,13 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Cpu, Zap, Info, MessageSquareCode } from "lucide-react";
-import { CreateJobBodyLoraRank, useListModels } from "@workspace/api-client-react";
+import { Loader2, Cpu, Zap, Info, MessageSquareCode, AlertTriangle } from "lucide-react";
+import { Link } from "wouter";
+import {
+  CreateJobBodyLoraRank,
+  useListModels,
+  useGetModalStatus,
+} from "@workspace/api-client-react";
 
 export function StepConfig({
   state,
@@ -22,6 +27,8 @@ export function StepConfig({
   isPending: boolean;
 }) {
   const { data: models } = useListModels();
+  const { data: modalStatus } = useGetModalStatus();
+  const modalConnected = !!modalStatus?.connected;
   const isInstruction = state.taskType === "instruction";
   const seqLengths = [128, 256, 512] as const;
   const seqIndex = Math.max(0, seqLengths.indexOf(state.maxSeqLength as 128 | 256 | 512));
@@ -86,10 +93,29 @@ export function StepConfig({
                 </Badge>
               </button>
             </div>
-            {state.computeMode === "gpu" && (
+            {state.computeMode === "gpu" && !modalConnected && (
+              <div
+                className="flex items-start gap-2 rounded-md border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/30 px-3 py-2 text-sm text-amber-900 dark:text-amber-200"
+                data-testid="banner-modal-not-connected"
+              >
+                <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                <span>
+                  GPU training requires a Modal account. Connect yours in
+                  Integrations →{" "}
+                  <Link
+                    href="/integrations"
+                    className="font-medium text-blue-700 dark:text-blue-300 hover:underline"
+                    data-testid="link-go-to-integrations"
+                  >
+                    Go to Integrations
+                  </Link>
+                </span>
+              </div>
+            )}
+            {state.computeMode === "gpu" && modalConnected && (
               <div className="flex items-start gap-2 rounded-md border border-blue-200 dark:border-blue-900/50 bg-blue-50 dark:bg-blue-950/30 px-3 py-2 text-sm text-blue-900 dark:text-blue-200">
                 <Info className="w-4 h-4 mt-0.5 shrink-0" />
-                <span>Requires Modal credits. Training runs on an A10G GPU.</span>
+                <span>Training on Modal A10G GPU ⚡ — runs under your Modal account.</span>
               </div>
             )}
           </div>

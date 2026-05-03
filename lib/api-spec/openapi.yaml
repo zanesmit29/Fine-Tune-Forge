@@ -16,6 +16,8 @@ tags:
     description: CSV dataset upload
   - name: jobs
     description: Training job management
+  - name: integrations
+    description: User-provided third-party integrations
 paths:
   /healthz:
     get:
@@ -220,6 +222,81 @@ paths:
           description: Deleted
         "404":
           description: Job not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /integrations/modal:
+    post:
+      operationId: connectModal
+      tags: [integrations]
+      summary: Connect a Modal account
+      description: Stores Modal API credentials in the server session after a lightweight verification call
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConnectModalBody"
+      responses:
+        "200":
+          description: Connected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModalIntegrationStatus"
+        "400":
+          description: Invalid credentials format
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Modal rejected the credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: disconnectModal
+      tags: [integrations]
+      summary: Disconnect the Modal account
+      responses:
+        "200":
+          description: Disconnected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModalIntegrationStatus"
+
+  /integrations/modal/status:
+    get:
+      operationId: getModalStatus
+      tags: [integrations]
+      summary: Get Modal connection status
+      responses:
+        "200":
+          description: Connection status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModalIntegrationStatus"
+
+  /integrations/modal/test:
+    post:
+      operationId: testModalConnection
+      tags: [integrations]
+      summary: Re-verify the stored Modal credentials
+      responses:
+        "200":
+          description: Verified
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModalIntegrationStatus"
+        "401":
+          description: Not connected or credentials rejected
           content:
             application/json:
               schema:
@@ -441,6 +518,29 @@ components:
           type: string
           minLength: 1
           maxLength: 200
+
+    ConnectModalBody:
+      type: object
+      required: [tokenId, tokenSecret]
+      properties:
+        tokenId:
+          type: string
+          minLength: 1
+        tokenSecret:
+          type: string
+          minLength: 1
+
+    ModalIntegrationStatus:
+      type: object
+      required: [connected]
+      properties:
+        connected:
+          type: boolean
+        maskedTokenId:
+          type: ["string", "null"]
+        verifiedAt:
+          type: ["string", "null"]
+          format: date-time
 
     ErrorResponse:
       type: object

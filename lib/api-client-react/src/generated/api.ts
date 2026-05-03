@@ -17,12 +17,14 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  ConnectModalBody,
   CreateJobBody,
   DatasetPreview,
   ErrorResponse,
   HealthStatus,
   JobLogsResponse,
   JobStats,
+  ModalIntegrationStatus,
   ModelInfo,
   RenameTrainedModelBody,
   TrainingJob,
@@ -835,6 +837,330 @@ export const useDeleteTrainedModel = <
   TContext
 > => {
   return useMutation(getDeleteTrainedModelMutationOptions(options));
+};
+
+/**
+ * Stores Modal API credentials in the server session after a lightweight verification call
+ * @summary Connect a Modal account
+ */
+export const getConnectModalUrl = () => {
+  return `/api/integrations/modal`;
+};
+
+export const connectModal = async (
+  connectModalBody: ConnectModalBody,
+  options?: RequestInit,
+): Promise<ModalIntegrationStatus> => {
+  return customFetch<ModalIntegrationStatus>(getConnectModalUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(connectModalBody),
+  });
+};
+
+export const getConnectModalMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof connectModal>>,
+    TError,
+    { data: BodyType<ConnectModalBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof connectModal>>,
+  TError,
+  { data: BodyType<ConnectModalBody> },
+  TContext
+> => {
+  const mutationKey = ["connectModal"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof connectModal>>,
+    { data: BodyType<ConnectModalBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return connectModal(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ConnectModalMutationResult = NonNullable<
+  Awaited<ReturnType<typeof connectModal>>
+>;
+export type ConnectModalMutationBody = BodyType<ConnectModalBody>;
+export type ConnectModalMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Connect a Modal account
+ */
+export const useConnectModal = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof connectModal>>,
+    TError,
+    { data: BodyType<ConnectModalBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof connectModal>>,
+  TError,
+  { data: BodyType<ConnectModalBody> },
+  TContext
+> => {
+  return useMutation(getConnectModalMutationOptions(options));
+};
+
+/**
+ * @summary Disconnect the Modal account
+ */
+export const getDisconnectModalUrl = () => {
+  return `/api/integrations/modal`;
+};
+
+export const disconnectModal = async (
+  options?: RequestInit,
+): Promise<ModalIntegrationStatus> => {
+  return customFetch<ModalIntegrationStatus>(getDisconnectModalUrl(), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDisconnectModalMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof disconnectModal>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof disconnectModal>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ["disconnectModal"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof disconnectModal>>,
+    void
+  > = () => {
+    return disconnectModal(requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DisconnectModalMutationResult = NonNullable<
+  Awaited<ReturnType<typeof disconnectModal>>
+>;
+
+export type DisconnectModalMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Disconnect the Modal account
+ */
+export const useDisconnectModal = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof disconnectModal>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof disconnectModal>>,
+  TError,
+  void,
+  TContext
+> => {
+  return useMutation(getDisconnectModalMutationOptions(options));
+};
+
+/**
+ * @summary Get Modal connection status
+ */
+export const getGetModalStatusUrl = () => {
+  return `/api/integrations/modal/status`;
+};
+
+export const getModalStatus = async (
+  options?: RequestInit,
+): Promise<ModalIntegrationStatus> => {
+  return customFetch<ModalIntegrationStatus>(getGetModalStatusUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetModalStatusQueryKey = () => {
+  return [`/api/integrations/modal/status`] as const;
+};
+
+export const getGetModalStatusQueryOptions = <
+  TData = Awaited<ReturnType<typeof getModalStatus>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getModalStatus>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetModalStatusQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getModalStatus>>> = ({
+    signal,
+  }) => getModalStatus({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getModalStatus>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetModalStatusQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getModalStatus>>
+>;
+export type GetModalStatusQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get Modal connection status
+ */
+
+export function useGetModalStatus<
+  TData = Awaited<ReturnType<typeof getModalStatus>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getModalStatus>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetModalStatusQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Re-verify the stored Modal credentials
+ */
+export const getTestModalConnectionUrl = () => {
+  return `/api/integrations/modal/test`;
+};
+
+export const testModalConnection = async (
+  options?: RequestInit,
+): Promise<ModalIntegrationStatus> => {
+  return customFetch<ModalIntegrationStatus>(getTestModalConnectionUrl(), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getTestModalConnectionMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof testModalConnection>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof testModalConnection>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ["testModalConnection"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof testModalConnection>>,
+    void
+  > = () => {
+    return testModalConnection(requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type TestModalConnectionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof testModalConnection>>
+>;
+
+export type TestModalConnectionMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Re-verify the stored Modal credentials
+ */
+export const useTestModalConnection = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof testModalConnection>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof testModalConnection>>,
+  TError,
+  void,
+  TContext
+> => {
+  return useMutation(getTestModalConnectionMutationOptions(options));
 };
 
 /**

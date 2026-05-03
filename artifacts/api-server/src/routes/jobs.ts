@@ -15,6 +15,7 @@ import {
   GetJobStatsResponse,
 } from "@workspace/api-zod";
 import { logger } from "../lib/logger";
+import { getModalCreds } from "../lib/modalSession";
 
 const router: IRouter = Router();
 
@@ -106,7 +107,11 @@ async function appendLog(jobId: string, line: string) {
     .where(eq(trainingJobsTable.id, jobId));
 }
 
-async function runTraining(jobId: string, body: typeof CreateJobBody._type) {
+async function runTraining(
+  jobId: string,
+  body: typeof CreateJobBody._type,
+  modalCreds: { tokenId: string; tokenSecret: string } | null,
+) {
   await db
     .update(trainingJobsTable)
     .set({ status: "running", startedAt: new Date() })
@@ -155,6 +160,12 @@ async function runTraining(jobId: string, body: typeof CreateJobBody._type) {
       ...process.env,
       DATABASE_URL: process.env.DATABASE_URL ?? "",
       PYTHONPATH: pythonPath,
+      ...(modalCreds
+        ? {
+            MODAL_TOKEN_ID: modalCreds.tokenId,
+            MODAL_TOKEN_SECRET: modalCreds.tokenSecret,
+          }
+        : {}),
     },
   });
 
@@ -328,6 +339,15 @@ router.post("/jobs", async (req, res): Promise<void> => {
     return;
   }
 
+  const modalCreds = getModalCreds();
+  if (body.computeMode === "gpu" && !modalCreds) {
+    res.status(401).json({
+      error:
+        "Connect your Modal account in Integrations to use GPU training.",
+    });
+    return;
+  }
+
   const MODEL_NAMES: Record<string, string> = {
     "distilbert-base-uncased": "DistilBERT",
     "prajjwal1/bert-tiny": "BERT-Tiny",
@@ -364,7 +384,13 @@ router.post("/jobs", async (req, res): Promise<void> => {
     })
     .returning();
 
-  runTraining(jobId, body).catch((err) => {
+  runTraining(
+    jobId,
+    body,
+    body.computeMode === "gpu" && modalCreds
+      ? { tokenId: modalCreds.tokenId, tokenSecret: modalCreds.tokenSecret }
+      : null,
+  ).catch((err) => {
     logger.error({ err, jobId }, "Unhandled error in training runner");
   });
 

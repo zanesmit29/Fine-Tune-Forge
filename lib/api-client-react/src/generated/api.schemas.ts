@@ -202,6 +202,21 @@ export interface RenameTrainedModelBody {
   nickname: string;
 }
 
+export interface ConnectModalBody {
+  /** @minLength 1 */
+  tokenId: string;
+  /** @minLength 1 */
+  tokenSecret: string;
+}
+
+export interface ModalIntegrationStatus {
+  connected: boolean;
+  /** @nullable */
+  maskedTokenId?: string | null;
+  /** @nullable */
+  verifiedAt?: string | null;
+}
+
 export interface ErrorResponse {
   error: string;
 }

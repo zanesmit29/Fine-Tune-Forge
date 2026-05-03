@@ -370,6 +370,49 @@ export const DeleteTrainedModelParams = zod.object({
 });
 
 /**
+ * Stores Modal API credentials in the server session after a lightweight verification call
+ * @summary Connect a Modal account
+ */
+
+export const ConnectModalBody = zod.object({
+  tokenId: zod.string().min(1),
+  tokenSecret: zod.string().min(1),
+});
+
+export const ConnectModalResponse = zod.object({
+  connected: zod.boolean(),
+  maskedTokenId: zod.string().nullish(),
+  verifiedAt: zod.coerce.date().nullish(),
+});
+
+/**
+ * @summary Disconnect the Modal account
+ */
+export const DisconnectModalResponse = zod.object({
+  connected: zod.boolean(),
+  maskedTokenId: zod.string().nullish(),
+  verifiedAt: zod.coerce.date().nullish(),
+});
+
+/**
+ * @summary Get Modal connection status
+ */
+export const GetModalStatusResponse = zod.object({
+  connected: zod.boolean(),
+  maskedTokenId: zod.string().nullish(),
+  verifiedAt: zod.coerce.date().nullish(),
+});
+
+/**
+ * @summary Re-verify the stored Modal credentials
+ */
+export const TestModalConnectionResponse = zod.object({
+  connected: zod.boolean(),
+  maskedTokenId: zod.string().nullish(),
+  verifiedAt: zod.coerce.date().nullish(),
+});
+
+/**
  * Returns summary counts and averages useful for dashboard display
  * @summary Aggregate stats across all jobs
  */
