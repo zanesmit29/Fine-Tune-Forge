@@ -1,0 +1,66 @@
+Feature: Model Library — Trained Models Dashboard
+
+Add a "My Models" tab to the main navigation (alongside the 
+"New Fine-Tune" flow). This is a persistent dashboard showing 
+all previously trained models with their details and downloads.
+
+Navigation:
+1. Add a top-level nav bar (if not already present) with two 
+   tabs:
+   - "New Fine-Tune" → the existing wizard flow
+   - "My Models" → the new model library view
+2. After a training job completes, automatically add it to 
+   the My Models library
+3. Highlight the "My Models" tab briefly after training 
+   completes to draw attention to it
+
+My Models Page Layout:
+1. Page title: "My Models" with a subtitle showing total 
+   model count: "3 models trained"
+2. Render each model as a table row (desktop) or card 
+   (mobile) with the following columns:
+   - Model name (auto-generated: e.g. "DistilBERT · Sentiment 
+     · May 3") — make this editable with an inline click-to-edit
+   - Task type badge (e.g. "Sentiment Analysis", 
+     "Text Classification") — styled as a colored chip
+   - Base model used (e.g. "distilbert-base-uncased")
+   - Dataset name (filename or template name used)
+   - Accuracy — shown as a percentage with a small colored 
+     indicator (green ≥80%, amber 60–79%, red <60%)
+   - Compute used — "CPU" or "GPU ⚡" badge
+   - Date trained
+   - Actions column: Download dropdown (PKL / ONNX / GGUF) 
+     and a Delete button (with confirmation)
+
+Data Layer:
+1. Store all job metadata in SQLite — extend the existing 
+   jobs table with: model_nickname, task_type, base_model, 
+   dataset_name, accuracy, compute_mode, created_at
+2. Add GET /models endpoint returning all completed jobs 
+   with their metadata
+3. Add PATCH /models/{job_id} for renaming (nickname update)
+4. Add DELETE /models/{job_id} to remove a job and its 
+   associated model files from disk
+5. Downloads should reuse the existing 
+   /download/{job_id}/{format} routes
+
+Empty State:
+- If no models trained yet, show a centered empty state:
+  icon + "No models yet" heading + "Start your first 
+  fine-tune" button that navigates to the New Fine-Tune tab
+
+UI Details:
+- Table header row with sort controls on: Date, Accuracy, 
+  Task Type (client-side sort only, no backend needed)
+- Row hover state: subtle background highlight
+- Delete button: red text, shows a confirm popover 
+  ("Delete this model? This cannot be undone") before acting
+- Download dropdown: three options (PKL, ONNX, GGUF) in a 
+  small popover menu on click
+- Accuracy indicator: small filled circle (●) in 
+  green/amber/red before the percentage value
+- Mobile: collapse table to stacked cards, keep all actions 
+  accessible
+
+Do not change the wizard flow, training logic, GPU/CPU 
+toggle, task type selector, or export formats.
