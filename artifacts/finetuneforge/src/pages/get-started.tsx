@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Layout } from "@/components/layout";
-import { Lightbulb, Check, Copy } from "lucide-react";
+import { Link } from "wouter";
+import { Lightbulb, Check, Copy, Zap, ExternalLink } from "lucide-react";
 
 function CodeBlock({ code }: { code: string }) {
   const [copied, setCopied] = useState(false);
@@ -230,6 +231,149 @@ LoRA Rank: controls the size of the fine-tuning adapter. Higher rank = more capa
 Your results page shows accuracy, loss, and a sample prediction so you can verify the model is working before you download.`}
               tip="Save the Python training script — it's a complete, runnable fine-tuning pipeline you can use independently of FineTuneForge."
             />
+          </div>
+        </section>
+
+        {/* Section 1.5 — GPU via Modal */}
+        <section className="mb-14">
+          <SectionHeading
+            title="Enabling GPU training with Modal"
+            subtitle="CPU works great for small models and quick experiments. For larger models like Mistral-7B or Llama-3.2-3B, connect your own Modal account for GPU compute."
+          />
+
+          <div className="bg-white border border-[#E2E8F0] rounded-lg shadow-sm p-6">
+            <div className="flex items-start gap-4 mb-6">
+              <div className="w-10 h-10 rounded-md bg-[#0F172A] text-white flex items-center justify-center shrink-0">
+                <Zap className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-lg font-semibold text-[#0F172A]">
+                  Why Modal?
+                </h3>
+                <p className="text-sm text-[#475569] mt-2 leading-relaxed">
+                  Modal gives you on-demand A10G GPU compute that spins up in
+                  seconds. You bring your own account so jobs run under your
+                  billing — FineTuneForge never stores your keys or charges you
+                  for compute.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3 text-sm text-[#475569]">
+                  <div className="flex items-start gap-2">
+                    <span className="text-[#2563EB] mt-0.5">·</span>
+                    <span>Free tier: $30/month in compute credits</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-[#2563EB] mt-0.5">·</span>
+                    <span>GPU: A10G — ~$2.07/hr</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <h4 className="text-sm font-semibold text-[#0F172A] mb-3">
+              Connect your account in 4 steps
+            </h4>
+            <ol className="space-y-3">
+              {[
+                {
+                  title: "Create a Modal account",
+                  body: (
+                    <>
+                      Sign up at{" "}
+                      <a
+                        href="https://modal.com/signup"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 text-[#2563EB] hover:underline"
+                      >
+                        modal.com/signup
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                      . The free tier covers most fine-tuning runs on small to
+                      mid-size models.
+                    </>
+                  ),
+                },
+                {
+                  title: "Generate an API token",
+                  body: (
+                    <>
+                      In Modal, go to{" "}
+                      <span className="font-medium text-[#0F172A]">
+                        Settings → API Tokens
+                      </span>{" "}
+                      and click{" "}
+                      <span className="font-medium text-[#0F172A]">
+                        New Token
+                      </span>
+                      . Copy both the Token ID (starts with{" "}
+                      <code className="px-1 py-0.5 rounded bg-[#F1F5F9] font-mono text-[12px]">
+                        ak-
+                      </code>
+                      ) and the Token Secret.
+                    </>
+                  ),
+                },
+                {
+                  title: "Paste them into Integrations",
+                  body: (
+                    <>
+                      Open the{" "}
+                      <Link
+                        href="/integrations"
+                        className="text-[#2563EB] hover:underline font-medium"
+                        data-testid="link-getstarted-integrations"
+                      >
+                        Integrations page
+                      </Link>{" "}
+                      in FineTuneForge, paste your Token ID and Token Secret,
+                      and click Connect Modal. We verify the credentials
+                      against Modal's API before accepting them.
+                    </>
+                  ),
+                },
+                {
+                  title: "Pick GPU when configuring training",
+                  body: (
+                    <>
+                      In Step 3 of the wizard, switch the Compute toggle to{" "}
+                      <span className="font-medium text-[#0F172A]">
+                        GPU (Modal A10G)
+                      </span>
+                      . Bigger base models like Mistral-7B and Llama-3.2-3B
+                      will become available, and the job will run on your
+                      Modal account.
+                    </>
+                  ),
+                },
+              ].map((step, i) => (
+                <li key={step.title} className="flex items-start gap-3">
+                  <span className="w-6 h-6 rounded-full bg-[#EFF6FF] text-[#2563EB] text-xs font-semibold flex items-center justify-center shrink-0 mt-0.5">
+                    {i + 1}
+                  </span>
+                  <div className="text-sm text-[#475569] leading-relaxed">
+                    <div className="font-semibold text-[#0F172A]">
+                      {step.title}
+                    </div>
+                    <div className="mt-0.5">{step.body}</div>
+                  </div>
+                </li>
+              ))}
+            </ol>
+
+            <Tip>
+              Your credentials are kept in memory on the server only — they're
+              never written to disk, logged, or shared. All GPU usage and
+              billing stays visible in your own{" "}
+              <a
+                href="https://modal.com/usage"
+                target="_blank"
+                rel="noreferrer"
+                className="text-[#2563EB] hover:underline"
+              >
+                modal.com/usage
+              </a>{" "}
+              dashboard.
+            </Tip>
           </div>
         </section>
 
