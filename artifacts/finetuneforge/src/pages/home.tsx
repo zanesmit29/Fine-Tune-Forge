@@ -236,6 +236,7 @@ export default function Home({
                   jobId={state.jobId}
                   taskType={state.taskType}
                   classDistribution={computeClassDistribution(state)}
+                  onStartNew={onResetTaskType}
                 />
               )}
             </div>

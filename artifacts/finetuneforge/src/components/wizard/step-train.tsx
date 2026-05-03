@@ -8,7 +8,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Download, Code, CheckCircle2, XCircle, Cpu, Zap, Sparkles, MessageSquareCode, Copy } from "lucide-react";
+import { Loader2, Download, Code, CheckCircle2, XCircle, Cpu, Zap, Sparkles, MessageSquareCode, Copy, Plus } from "lucide-react";
 import {
   LineChart,
   Line,
@@ -385,10 +385,12 @@ export function StepTrain({
   jobId,
   taskType,
   classDistribution,
+  onStartNew,
 }: {
   jobId: string | null;
   taskType: TaskTypeId | null;
   classDistribution: { label: string; count: number }[] | null;
+  onStartNew: () => void;
 }) {
   if (!jobId) return null;
 
@@ -571,6 +573,14 @@ export function StepTrain({
 
       {isCompleted && (
         <div className="flex flex-wrap justify-end items-center gap-3 pt-4">
+          <Button
+            variant="outline"
+            onClick={onStartNew}
+            className="mr-auto"
+            data-testid="button-start-new-finetune"
+          >
+            <Plus className="w-4 h-4 mr-2" /> Start a new fine-tune
+          </Button>
           <Dialog>
             <DialogTrigger asChild>
               <Button variant="outline" onClick={loadScript}>
