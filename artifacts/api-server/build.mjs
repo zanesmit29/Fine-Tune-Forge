@@ -107,7 +107,9 @@ async function buildAll() {
       "puppeteer-core",
       "electron",
     ],
-    sourcemap: "linked",
+    // Disable sourcemaps in production: they bloat the image (~5 MB)
+    // and aren't needed for autoscale. Re-enable locally if debugging.
+    sourcemap: process.env.NODE_ENV === "production" ? false : "linked",
     plugins: [
       // pino relies on workers to handle logging, instead of externalizing it we use a plugin to handle it
       esbuildPluginPino({ transports: ["pino-pretty"] })

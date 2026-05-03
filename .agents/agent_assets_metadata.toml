@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "hrj7SLCwYT_fF3M3cyqQG"
+uri = "file://.local/outputs/Fine-Tune-Forge-v4-0--taking-it-further-.pdf"
+type = "pdf"
+title = "Fine Tune Forge v4.0 (taking it further).pdf"

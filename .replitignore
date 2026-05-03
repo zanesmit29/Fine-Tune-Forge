@@ -1,5 +1,53 @@
-# The format of this file is identical to `.dockerignore`.
-# It is used to reduce the size of deployed images to make the process of publishing faster.
+# Format identical to `.dockerignore`. Keeps the deployed image small.
 
-# No need to store the pnpm store twice.
+# Replit / dev caches
 .local
+.cache
+.upm
+.agents
+.replit-cache
+
+# VCS history (not needed at runtime)
+.git
+.gitignore
+.gitattributes
+
+# Local Python virtualenv (we ship .pythonlibs instead)
+.venv
+
+# Editor / OS
+.vscode
+.idea
+.DS_Store
+
+# Build artifacts not needed at runtime
+**/*.tsbuildinfo
+**/*.map
+**/__pycache__
+**/*.pyc
+**/*.pyo
+
+# Source dirs for already-built artifacts (the dist/ output is what runs)
+artifacts/finetuneforge/src
+artifacts/test-report/src
+artifacts/mockup-sandbox/src
+artifacts/mockup-sandbox/components
+
+# Mockup sandbox is a dev-only canvas tool, never deployed
+artifacts/mockup-sandbox
+
+# Runtime data — never ship into the image
+artifacts/api-server/results
+artifacts/api-server/uploads
+
+# Misc local-only assets
+attached_assets
+screenshots
+tmp
+out-tsc
+.pnpm-store
+
+# Node test/dev junk if present
+**/node_modules/.cache
+**/coverage
+**/.turbo
