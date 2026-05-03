@@ -118,12 +118,6 @@ function Navbar() {
           </a>
           <Link
             href={APP_PATH}
-            className="hidden sm:inline text-sm text-[#0F172A] hover:text-[#2563EB] transition-colors"
-          >
-            Sign In
-          </Link>
-          <Link
-            href={APP_PATH}
             className="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium text-white bg-[#2563EB] hover:bg-[#1D4ED8] transition-colors"
           >
             Start for Free
