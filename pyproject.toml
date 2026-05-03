@@ -13,16 +13,3 @@ dependencies = [
     "pandas",
     "numpy",
 ]
-
-# Use the CPU-only PyTorch wheels. The api-server only does CPU-side data prep
-# locally; actual GPU training runs on Modal. CUDA wheels would add ~3 GB to
-# the deployed image for no runtime benefit.
-[[tool.uv.index]]
-name = "pytorch-cpu"
-url = "https://download.pytorch.org/whl/cpu"
-explicit = true
-
-[tool.uv.sources]
-torch = { index = "pytorch-cpu" }
-torchvision = { index = "pytorch-cpu" }
-torchaudio = { index = "pytorch-cpu" }
