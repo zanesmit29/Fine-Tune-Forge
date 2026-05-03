@@ -16,7 +16,13 @@ import json
 import os
 import pickle
 import sys
+import time as _time
 import warnings
+
+# First line of output — proves the process is alive even before heavy imports.
+print("[FineTuneForge] Python process started, loading ML libraries "
+      "(typically 15-30s on first run)...", flush=True)
+_t_boot = _time.time()
 
 warnings.filterwarnings("ignore")
 
@@ -43,6 +49,9 @@ try:
     _hf_transformers.utils.logging.disable_progress_bar()
 except Exception:
     pass
+
+print(f"[FineTuneForge] ML libraries ready ({_time.time() - _t_boot:.1f}s)",
+      flush=True)
 
 # ---------------------------------------------------------------------------
 # Argument parsing
