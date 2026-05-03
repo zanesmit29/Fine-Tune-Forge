@@ -1,0 +1,113 @@
+Feature: Enterprise UI Redesign
+
+Rework the app's visual design and navigation structure to 
+feel professional and enterprise-ready — targeting SMB users 
+who expect a product-grade tool, not a hackathon project.
+Do not change any backend logic, training code, or data layer.
+
+Navigation — Replace top tabs with a left sidebar:
+1. Remove the existing top tab navigation
+2. Add a fixed left sidebar (240px wide) with:
+   - App logo + name "FineTuneForge" at the top (SVG logo, 
+     clean wordmark)
+   - Nav items with icons (Lucide icons):
+       · New Fine-Tune (Sparkles icon)
+       · My Models (Database icon)
+       · Integrations (Plug icon) — placeholder page for now
+       · Settings (Settings icon) — placeholder page for now
+   - Active state: blue accent background pill on the nav item
+   - Bottom of sidebar: user avatar + name (from Replit Auth) 
+     + a small "Sign out" link
+3. Main content area sits to the right of the sidebar, 
+   full height, with a top header bar showing:
+   - Current page title (bold, --text-xl)
+   - Breadcrumb for wizard steps: 
+     "New Fine-Tune / Sentiment Analysis / Step 2 of 4"
+
+Layout & Spacing:
+1. Increase content area padding to var(--space-8) on all sides
+2. All cards: clean white background (#FFFFFF), 1px border 
+   (#E2E8F0), border-radius var(--radius-lg), 
+   box-shadow var(--shadow-sm)
+3. Section headings: --text-lg, font-weight 600, 
+   color var(--color-text), margin-bottom var(--space-4)
+4. Form labels: --text-sm, font-weight 500, 
+   color var(--color-text-muted), uppercase tracking-wide
+5. All input fields: full-width, border 1px solid #E2E8F0, 
+   border-radius var(--radius-md), padding var(--space-3), 
+   focus ring using blue accent
+
+Wizard redesign:
+1. Replace the top progress bar with a vertical step indicator 
+   in the left portion of the wizard card:
+   - Step number in a circle (filled blue = completed, 
+     filled blue outline = active, gray = upcoming)
+   - Step label beside the circle
+   - Vertical connector line between steps
+2. Wizard content sits in the right portion of the same card
+3. Card max-width: 900px, centered in the content area
+
+Typography:
+1. Load Inter from Google Fonts for UI text
+2. Load JetBrains Mono from Google Fonts for code blocks, 
+   file names, model names, and the training log terminal
+3. All body text: Inter, --text-base (16px)
+4. Buttons: Inter, --text-sm (14px), font-weight 500
+5. Monospace elements: JetBrains Mono, --text-sm
+
+Buttons:
+1. Primary: solid blue (#2563EB), white text, 
+   border-radius var(--radius-md), padding var(--space-2) 
+   var(--space-5), hover darken 10%
+2. Secondary: white background, 1px border #E2E8F0, 
+   color var(--color-text), hover background #F8FAFC
+3. Danger: white background, 1px border #FCA5A5, 
+   color #DC2626, hover background #FEF2F2
+4. All buttons: --text-sm, font-weight 500, 
+   transition 150ms ease
+
+Task Type Selector:
+1. Redesign task cards as clean rectangular cards (not bubbly):
+   - 48px icon area (Lucide icon, blue accent color)
+   - Task name in --text-base font-weight 600
+   - One-line description in --text-sm color-text-muted
+   - "Coming Soon" cards: opacity 0.5, cursor not-allowed, 
+     small gray badge top-right
+   - Available cards: hover lift (translateY -2px, 
+     shadow-md), active blue border on selection
+
+My Models Table:
+1. Redesign as a proper data table:
+   - Sticky header row with column labels
+   - Alternating row backgrounds (#FFFFFF / #F8FAFC)
+   - Row hover: #F1F5F9 background
+   - Column borders: 1px #E2E8F0 between columns
+   - All numeric values (accuracy %) in JetBrains Mono
+   - Action buttons in the last column: icon-only with 
+     tooltips (Download icon, Trash icon)
+   - Compact row height: 52px
+
+Training Log Terminal:
+1. Restyle as a professional IDE-style console:
+   - Background: #0F172A (near-black)
+   - Text: #E2E8F0 (light gray)
+   - Log line numbers in #475569 (muted)
+   - Timestamps in #64748B
+   - Error lines: #F87171 (red)
+   - Success/completion lines: #4ADE80 (green)
+   - Border-radius var(--radius-lg) on the terminal container
+   - Font: JetBrains Mono, --text-sm
+
+Color Palette (override previous):
+   --color-bg: #F8FAFC
+   --color-surface: #FFFFFF
+   --color-border: #E2E8F0
+   --color-text: #0F172A
+   --color-text-muted: #64748B
+   --color-primary: #2563EB
+   --color-primary-hover: #1D4ED8
+   --color-accent-bg: #EFF6FF (light blue tint for info banners)
+
+Do not change any training logic, API routes, export formats, 
+GPU/CPU toggle, Modal integration, task types, or database 
+schema. This is a frontend-only visual redesign.
