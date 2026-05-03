@@ -1,0 +1,184 @@
+Feature: Professional SMB-Focused Landing Page
+
+Create a standalone landing page (route / or landing.html) 
+that is the public entry point to FineTuneForge. Target 
+audience: SMB owners and team leads who want custom AI 
+models without cloud lock-in or ML expertise.
+Do not change anything inside the app dashboard or API routes.
+
+--- NAVBAR ---
+- Left: FineTuneForge SVG logo + wordmark
+- Right: "Why FineTuneForge" anchor link, "Sign In" link, 
+  "Start for Free" primary blue button
+- Sticky, white background, 1px bottom border #E2E8F0
+- backdrop-filter: blur(8px) with slight transparency on scroll
+
+--- HERO ---
+Eyebrow: "The fine-tuning platform built for your business"
+  --text-sm, #2563EB, uppercase, letter-spacing 0.08em
+
+Headline (two lines, --text-3xl, Inter 700, #0F172A):
+  "Fine-tune AI on your data.
+   Own your model completely."
+
+Subheadline (--text-lg, #64748B, max-width 540px):
+  "No cloud lock-in. No black boxes. Upload your data, 
+  train on any model, and download both the model and 
+  the full training code — in PKL, ONNX, or GGUF format."
+
+Two CTAs:
+  · "Start Fine-Tuning Free" — large primary blue button
+  · "See how it works ↓" — ghost button, scrolls to 
+    HOW IT WORKS section
+
+Three trust micro-badges below CTAs (--text-sm, #64748B):
+  · "✓ No credit card required"
+  · "✓ Your data stays in your account"
+  · "✓ Download your model + the code"
+
+Hero visual: a styled UI mockup card showing the 4-step 
+wizard (built with divs, not a screenshot). Show Step 1 
+active — Task Type selector with "Text Classification" 
+selected and "Coming Soon" cards greyed out. 
+Subtle shadow, border-radius var(--radius-xl).
+
+--- HOW IT WORKS ---
+Section heading: "From data to model in four steps"
+Section subtext: "No ML expertise required. 
+  Most users are done in under 15 minutes."
+
+Four horizontal steps with connector lines:
+  1. "Choose Your Task"
+     Pick a business problem — classification, sentiment 
+     analysis, or instruction tuning
+  2. "Upload Your Data"
+     Drop in a CSV or start from one of our templates
+  3. "Configure & Train"
+     Set your parameters and choose GPU or CPU compute
+  4. "Download Everything"
+     Get your model in PKL, ONNX, or GGUF — plus 
+     the full Python training script
+
+Each step: blue number circle, bold title --text-base 600, 
+one-line description --text-sm #64748B, Lucide icon.
+Horizontal on desktop, vertical stack on mobile.
+
+--- WHY FINETUNEFORGE ---
+Section heading: "Built differently from every other 
+fine-tuning tool"
+Section subtext: "Most platforms give you a model and 
+  nothing else. We give you the model, the code, and 
+  full control."
+
+Three differentiator cards in a row:
+
+  Card 1 — "Your models, your code"
+  Icon: Code (Lucide), blue
+  "Every training run generates a clean, commented Python 
+  script you can download and run anywhere. 
+  No black boxes. No vendor dependency."
+
+  Card 2 — "No cloud lock-in"
+  Icon: Unlock (Lucide), blue
+  "Bring your own Modal API key. Your data and compute 
+  stay in your own accounts. We never store 
+  your models on our servers."
+
+  Card 3 — "Built for your use case"
+  Icon: Target (Lucide), blue
+  "Start from a business problem — not a model 
+  architecture. Classification, sentiment, instruction 
+  tuning — with more use cases coming soon."
+
+Cards: white bg, 1px border #E2E8F0, shadow-sm, 
+radius var(--radius-lg), hover lift translateY(-2px).
+
+--- TASK TYPES ---
+Section heading: "Built for real business use cases"
+
+Three task cards in a row:
+
+  Card 1 — Text Classification
+  Icon: Tag (Lucide)
+  "Automatically sort emails, tickets, or documents 
+  into the categories your team defines."
+  Example badge: "Support routing · Topic tagging"
+
+  Card 2 — Sentiment Analysis
+  Icon: BarChart2 (Lucide)
+  "Understand how customers feel about your product 
+  from reviews, surveys, and support messages."
+  Example badge: "Review analysis · NPS scoring"
+
+  Card 3 — Instruction Tuning
+  Icon: MessageSquare (Lucide)
+  Green badge top-right: "GGUF · LM Studio Ready"
+  "Train a model on your company FAQ or product docs. 
+  Run it locally in LM Studio — fully offline."
+  Example badge: "Company FAQ · Product assistant"
+
+Below the three cards, a subdued row of coming soon items:
+"Coming soon: Named Entity Recognition · Summarization · 
+Question & Answer · Custom Instruction Sets"
+--text-sm, #94A3B8, centered
+
+--- EXPORT FORMATS ---
+Section heading: "Your model, your format"
+Section subtext: "Download in the format that fits 
+  your stack — or take all three."
+
+Three format blocks side by side, separated by thin borders:
+  PKL   "For Python pipelines and scikit-learn"
+  ONNX  "For cross-platform inference (ONNX Runtime)"
+  GGUF  "For LM Studio and Ollama — run fully offline"
+
+Format label: JetBrains Mono, --text-xl, #0F172A, bold
+Description: Inter, --text-sm, #64748B
+
+Plus one line below all three:
+"Every export includes the full Python training script 
+that generated it."
+--text-sm, #2563EB (blue), centered, with a Code icon
+
+--- SOCIAL PROOF ---
+Section heading: "Trusted by teams who build with AI"
+Six placeholder logo boxes (gray rounded rectangles, 
+"Company" in --text-sm #94A3B8) in a row.
+
+One pull quote:
+"We fine-tuned a support classifier in 20 minutes 
+and deployed it the same day. The exported code meant 
+we could integrate it into our pipeline immediately."
+— "Head of Engineering, B2B SaaS company"
+(Clearly styled as a placeholder/example testimonial)
+
+Quote styling: --text-lg, #0F172A, italic, 
+left border 3px solid #2563EB, padding-left var(--space-6)
+
+--- FINAL CTA ---
+Full-width section, background #EFF6FF (light blue tint)
+Heading: "Start building your model today"
+  --text-2xl, Inter 700, #0F172A
+Subtext: "Free to start. No ML expertise. 
+  No cloud lock-in. Your models stay yours."
+  --text-base, #64748B
+Single large CTA: "Create Your First Model →"
+  Routes to Replit Auth login → app dashboard
+
+--- FOOTER ---
+Left: FineTuneForge logo + "© 2026 FineTuneForge"
+Right: "Privacy" · "Terms" · "Contact" (placeholder hrefs)
+1px top border #E2E8F0, padding var(--space-8)
+
+Technical:
+- Smooth scroll between sections via anchor links
+- Fade-in + translateY(20px → 0) on scroll for each 
+  section via IntersectionObserver, 400ms ease-out
+- Fully responsive, mobile-first, tested at 375px
+- Same fonts (Inter + JetBrains Mono) and color tokens 
+  as the app dashboard
+- All CTAs route to Replit Auth login flow
+- External links: target="_blank" rel="noopener noreferrer"
+
+Do not change the app dashboard, training logic, 
+API routes, or database schema.
