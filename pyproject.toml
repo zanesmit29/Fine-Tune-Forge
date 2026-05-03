@@ -4,14 +4,14 @@ version = "0.1.0"
 description = "FineTuneForge Python runtime deps for api-server training scripts"
 requires-python = ">=3.11,<3.13"
 dependencies = [
-    "modal>=0.64",
-    "torch>=2.2",
-    "transformers>=4.40",
-    "peft>=0.10",
-    "datasets>=2.18",
-    "scikit-learn>=1.4",
-    "pandas>=2.2",
-    "numpy>=1.26",
+    "modal",
+    "torch",
+    "transformers",
+    "peft",
+    "datasets",
+    "scikit-learn",
+    "pandas",
+    "numpy",
 ]
 
 # Use the CPU-only PyTorch wheels. The api-server only does CPU-side data prep
@@ -23,6 +23,6 @@ url = "https://download.pytorch.org/whl/cpu"
 explicit = true
 
 [tool.uv.sources]
-torch = [{ index = "pytorch-cpu", marker = "platform_system == 'Linux'" }]
-torchvision = [{ index = "pytorch-cpu", marker = "platform_system == 'Linux'" }]
-torchaudio = [{ index = "pytorch-cpu", marker = "platform_system == 'Linux'" }]
+torch = { index = "pytorch-cpu" }
+torchvision = { index = "pytorch-cpu" }
+torchaudio = { index = "pytorch-cpu" }
