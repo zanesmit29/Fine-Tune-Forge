@@ -1,0 +1,131 @@
+Feature: Integrations Page — User Modal API Key Management
+
+Build out the "Integrations" sidebar page so users can 
+connect their own Modal account for GPU-powered training.
+This replaces any hardcoded Modal credentials with 
+per-user API keys stored securely.
+
+Sidebar Navigation:
+- "Integrations" nav item is already present — wire it 
+  to this new page (currently a placeholder)
+
+Page Layout:
+- Page title: "Integrations"
+- Subtitle: "Connect your own compute providers. 
+  Your credentials are stored securely and never 
+  shared."
+- Max-width: var(--content-narrow) 640px, centered
+
+--- MODAL INTEGRATION CARD ---
+Card layout: white bg, 1px border #E2E8F0, 
+radius var(--radius-lg), shadow-sm, padding var(--space-6)
+
+Header row:
+- Left: Modal logo (use a simple "M" SVG lettermark 
+  in a dark rounded square) + "Modal" wordmark + 
+  "GPU Compute" label in --text-sm #64748B
+- Right: connection status badge
+  · Connected: green dot + "Connected" in #059669
+  · Not connected: gray dot + "Not connected" in #94A3B8
+
+Body (when not connected):
+"Modal provides on-demand GPU compute for training 
+larger models like Mistral-7B and Llama-3.2-3B. 
+Connect your Modal account to unlock GPU training."
+
+Two-column info row:
+  · "Free tier: $30/month in compute credits"
+  · "GPU: A10G — ~$2.07/hr"
+Both in --text-sm, icon (Info, Lucide) in #64748B
+
+"Don't have a Modal account?" link → 
+  https://modal.com/signup 
+  target="_blank", blue text, external link icon
+
+Form:
+- Label: "Modal Token ID"
+  Input: type="text", placeholder="ak-..."
+- Label: "Modal Token Secret"  
+  Input: type="password", placeholder="••••••••••••"
+  Toggle show/hide password button (Eye/EyeOff Lucide icon)
+- "Where do I find these?" — expandable inline accordion:
+  Shows 3 numbered steps:
+  1. Go to modal.com and sign in
+  2. Navigate to Settings → API Tokens
+  3. Click "New Token" and copy both values here
+  Accordion style: --text-sm, #64748B, 
+  ChevronDown icon, smooth expand animation
+
+Primary button: "Connect Modal" (full width, blue)
+
+Body (when connected):
+- Green success banner: "Modal connected successfully. 
+  GPU training is now available."
+  Background #F0FDF4, border #BBF7D0, text #166534
+- Show masked token: "Token ID: ak-••••••••1234"
+- "Last verified:" timestamp
+- Secondary danger button: "Disconnect" 
+  (shows confirm popover before removing credentials)
+- "Test connection" ghost button → sends a 
+  ping to Modal API and shows success/error inline
+
+--- HOW IT WORKS INFO BOX ---
+Below the Modal card, a light blue info box 
+(background #EFF6FF, border #BFDBFE, 
+radius var(--radius-md), padding var(--space-4)):
+
+Icon: Info (Lucide), blue
+Heading: "Your credentials stay private"
+"Your Modal API keys are stored as environment 
+variables in your session and are never logged, 
+shared, or stored on our servers. All GPU training 
+jobs run under your own Modal account — so you 
+have full visibility into usage and costs at 
+modal.com/usage."
+
+--- COMING SOON INTEGRATIONS ---
+Below the info box, a section heading: 
+"More integrations coming soon"
+
+Three greyed-out integration cards in a row 
+(opacity 0.5, cursor not-allowed):
+  · RunPod — "Alternative GPU compute provider"
+  · Hugging Face Hub — "Push trained models directly 
+    to your HF Hub repository"
+  · AWS S3 — "Store model exports in your own bucket"
+
+Each with a "Coming Soon" pill badge, same style 
+as the task type Coming Soon cards.
+
+Backend changes:
+1. Add POST /integrations/modal endpoint:
+   - Accepts token_id and token_secret in request body
+   - Validates credentials by making a lightweight 
+     Modal API test call
+   - On success: store as session-scoped environment 
+     variables (NOT in SQLite — keep in memory only 
+     for security)
+   - Returns { connected: true, verified_at: timestamp }
+2. Add DELETE /integrations/modal endpoint to 
+   disconnect (clears the session variables)
+3. Add GET /integrations/modal/status endpoint 
+   returning connection status + masked token ID
+4. Update the /train endpoint:
+   - If compute_mode is "gpu": check Modal credentials 
+     are present in session, return 401 with message 
+     "Connect your Modal account in Integrations to 
+     use GPU training" if missing
+   - Pass user's token credentials to modal_trainer.py
+
+GPU toggle in wizard (Step 3):
+- If Modal is not connected and user selects GPU:
+  Show an inline warning banner inside the config step:
+  "GPU training requires a Modal account. 
+   Connect yours in Integrations → 
+   [Go to Integrations] (link, blue)"
+- If Modal is connected: show the existing 
+  "Training on Modal A10G GPU ⚡" status badge
+
+Do not change training logic, export formats, 
+task types, My Models table, Get Started page, 
+landing page, or sidebar styling.
