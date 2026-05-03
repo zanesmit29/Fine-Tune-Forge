@@ -229,6 +229,27 @@ router.post("/jobs", async (req, res): Promise<void> => {
   }
 
   const body = parsed.data;
+
+  const MODEL_COMPUTE_MODES: Record<string, ReadonlyArray<"cpu" | "gpu">> = {
+    "distilbert-base-uncased": ["cpu", "gpu"],
+    "gpt2": ["cpu", "gpu"],
+    "Qwen/Qwen2.5-0.5B": ["cpu", "gpu"],
+    "distilgpt2": ["cpu", "gpu"],
+    "mistralai/Mistral-7B-v0.1": ["gpu"],
+    "meta-llama/Llama-3.2-3B": ["gpu"],
+  };
+  const supportedModes = MODEL_COMPUTE_MODES[body.modelId];
+  if (!supportedModes) {
+    res.status(400).json({ error: `Unknown model: ${body.modelId}` });
+    return;
+  }
+  if (!supportedModes.includes(body.computeMode)) {
+    res.status(400).json({
+      error: `Model ${body.modelId} does not support ${body.computeMode.toUpperCase()} compute. Supported modes: ${supportedModes.join(", ")}.`,
+    });
+    return;
+  }
+
   const csvPath = path.join(UPLOAD_DIR, `${body.datasetId}.csv`);
   if (!fs.existsSync(csvPath)) {
     res.status(400).json({ error: "Dataset not found. Please re-upload your CSV." });

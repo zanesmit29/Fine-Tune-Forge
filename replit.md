@@ -2,7 +2,7 @@
 
 ## Overview
 
-A web platform where non-technical users upload a CSV dataset, select a base model (DistilBERT, GPT-2, Qwen2.5-0.5B), configure fine-tuning via a guided UI, and receive a downloadable `.pkl` model file plus the full Python training code — running live using Hugging Face transformers + PEFT/LoRA on CPU.
+A web platform where non-technical users upload a CSV dataset, select a base model, configure fine-tuning via a guided UI, and receive a downloadable `.pkl` model file plus the full Python training code. Supports two compute backends: **Replit CPU** (HuggingFace transformers + PEFT/LoRA via `train.py` subprocess) and **Modal A10G GPU** (via `modal_trainer.py` using the Modal SDK).
 
 ## Stack
 
@@ -45,16 +45,15 @@ Routes:
 - `GET /api/jobs/:jobId/download/model` — Download `.pkl` model file
 - `GET /api/jobs/:jobId/download/script` — Download generated `.py` training script
 
-### Python Training (training/train.py)
-- Spawned as a child process by the Express server
-- Uses LoRA (PEFT) on top of HuggingFace base models
-- Requires PYTHONPATH to include `.pythonlibs`
-- Writes metrics to `results/{jobId}/metrics.json`
-- Saves model to `results/{jobId}/model.pkl`
-- Saves training script to `results/{jobId}/train_script.py`
+### Python Training
+Both trainers are spawned as a child process by the Express server, selected by `computeMode` on the job:
+- **CPU** → `training/train.py` (LoRA + HuggingFace transformers, runs locally)
+- **GPU** → `training/modal_trainer.py` (Modal app with `@app.function(gpu="A10G")`, streams logs via `app.run()` + `remote_gen()`. Requires `MODAL_TOKEN_ID` and `MODAL_TOKEN_SECRET` secrets.)
+
+Both write `metrics.json`, `model.pkl`, and `train_script.py` into `results/{jobId}/`. PYTHONPATH must include `.pythonlibs`.
 
 ### Database Schema (lib/db/src/schema/jobs.ts)
-- `training_jobs` table: stores job config, status, log lines (JSON), metrics
+- `training_jobs` table: stores job config, status, log lines (JSON), metrics, `compute_mode` ("cpu" | "gpu")
 
 ## File Storage
 - CSV uploads: `uploads/` directory (relative to server cwd)
@@ -64,8 +63,11 @@ Routes:
 Python packages are in `/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages`.
 When spawning Python training processes, PYTHONPATH must include this path.
 
-Available models:
-- `distilbert-base-uncased` (66M params, ~5min)
-- `gpt2` (117M params, ~10min)
-- `Qwen/Qwen2.5-0.5B` (500M params, ~25min)
-- `distilgpt2` (82M params, ~8min)
+Available models (CPU + GPU unless noted):
+- `distilbert-base-uncased` (66M, ~5min CPU / ~1min GPU)
+- `gpt2` (117M, ~10min CPU / ~2min GPU)
+- `Qwen/Qwen2.5-0.5B` (500M, ~25min CPU / ~3min GPU)
+- `mistralai/Mistral-7B-v0.1` + LoRA (7B, **GPU only**, ~12min)
+- `meta-llama/Llama-3.2-3B` + LoRA (3B, **GPU only**, ~7min)
+
+Server-side `POST /api/jobs` enforces model/computeMode compatibility (rejects GPU-only models in CPU mode with HTTP 400).
