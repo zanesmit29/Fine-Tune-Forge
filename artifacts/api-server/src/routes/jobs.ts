@@ -35,6 +35,7 @@ function formatJob(row: typeof trainingJobsTable.$inferSelect) {
     epochs: row.epochs,
     learningRate: row.learningRate,
     loraRank: row.loraRank,
+    computeMode: (row.computeMode ?? "cpu") as "cpu" | "gpu",
     status: row.status as "queued" | "running" | "completed" | "failed",
     createdAt: row.createdAt.toISOString(),
     startedAt: row.startedAt ? row.startedAt.toISOString() : null,
@@ -69,7 +70,12 @@ async function runTraining(jobId: string, body: typeof CreateJobBody._type) {
   const csvPath = path.join(UPLOAD_DIR, `${body.datasetId}.csv`);
   const outputDir = path.join(RESULTS_DIR, jobId);
 
-  const pythonScript = path.join(__dirname, "..", "training", "train.py");
+  const trainingDir = path.join(__dirname, "..", "training");
+  const isGpu = body.computeMode === "gpu";
+  const pythonScript = path.join(
+    trainingDir,
+    isGpu ? "modal_trainer.py" : "train.py",
+  );
 
   const args = [
     pythonScript,
@@ -85,10 +91,11 @@ async function runTraining(jobId: string, body: typeof CreateJobBody._type) {
   ];
 
   await appendLog(jobId, `[FineTuneForge] Starting training job ${jobId}`);
+  await appendLog(jobId, `[FineTuneForge] Compute: ${isGpu ? "Modal A10G GPU" : "Replit CPU"}`);
   await appendLog(jobId, `[FineTuneForge] Model: ${body.modelId}`);
   await appendLog(jobId, `[FineTuneForge] Dataset: ${body.datasetId}.csv`);
   await appendLog(jobId, `[FineTuneForge] Config: epochs=${body.epochs}, lr=${body.learningRate}, lora_rank=${body.loraRank}`);
-  await appendLog(jobId, `[FineTuneForge] Spawning Python training process...`);
+  await appendLog(jobId, `[FineTuneForge] Spawning ${isGpu ? "Modal GPU" : "Python CPU"} training process...`);
 
   const pythonLibs = "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages";
   const existingPythonPath = process.env.PYTHONPATH ?? "";
@@ -233,6 +240,8 @@ router.post("/jobs", async (req, res): Promise<void> => {
     "gpt2": "GPT-2 Small",
     "Qwen/Qwen2.5-0.5B": "Qwen2.5-0.5B",
     "distilgpt2": "DistilGPT-2",
+    "mistralai/Mistral-7B-v0.1": "Mistral-7B + LoRA",
+    "meta-llama/Llama-3.2-3B": "Llama-3.2-3B + LoRA",
   };
 
   const jobId = randomUUID();
@@ -248,6 +257,7 @@ router.post("/jobs", async (req, res): Promise<void> => {
       epochs: body.epochs,
       learningRate: body.learningRate,
       loraRank: body.loraRank,
+      computeMode: body.computeMode,
       status: "queued",
       logLines: "[]",
     })

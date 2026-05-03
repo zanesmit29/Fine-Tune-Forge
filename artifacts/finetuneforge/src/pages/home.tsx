@@ -2,7 +2,7 @@ import { useLocation } from "wouter";
 import { Layout } from "@/components/layout";
 import { Progress } from "@/components/ui/progress";
 import { useCreateJob } from "@workspace/api-client-react";
-import { DatasetPreview, CreateJobBodyLoraRank } from "@workspace/api-client-react";
+import { DatasetPreview, CreateJobBodyLoraRank, CreateJobBodyComputeMode } from "@workspace/api-client-react";
 import { StepModel } from "@/components/wizard/step-model";
 import { StepData } from "@/components/wizard/step-data";
 import { StepConfig } from "@/components/wizard/step-config";
@@ -16,6 +16,7 @@ export interface WizardState {
   epochs: number;
   learningRate: number;
   loraRank: CreateJobBodyLoraRank;
+  computeMode: CreateJobBodyComputeMode;
   jobId: string | null;
 }
 
@@ -53,6 +54,7 @@ export default function Home({ step, setStep, state, setState }: HomeProps) {
           epochs: state.epochs,
           learningRate: state.learningRate,
           loraRank: state.loraRank,
+          computeMode: state.computeMode,
         },
       },
       {

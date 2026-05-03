@@ -185,7 +185,7 @@ components:
 
     ModelInfo:
       type: object
-      required: [id, name, paramCount, estimatedMinutes, description, taskType]
+      required: [id, name, paramCount, description, taskType, computeModes]
       properties:
         id:
           type: string
@@ -193,12 +193,19 @@ components:
           type: string
         paramCount:
           type: string
-        estimatedMinutes:
-          type: integer
+        estimatedMinutesCpu:
+          type: ["integer", "null"]
+        estimatedMinutesGpu:
+          type: ["integer", "null"]
         description:
           type: string
         taskType:
           type: string
+        computeModes:
+          type: array
+          items:
+            type: string
+            enum: [cpu, gpu]
 
     DatasetPreview:
       type: object
@@ -225,7 +232,7 @@ components:
 
     CreateJobBody:
       type: object
-      required: [modelId, datasetId, textColumn, labelColumn, epochs, learningRate, loraRank]
+      required: [modelId, datasetId, textColumn, labelColumn, epochs, learningRate, loraRank, computeMode]
       properties:
         modelId:
           type: string
@@ -244,10 +251,13 @@ components:
         loraRank:
           type: integer
           enum: [4, 8, 16]
+        computeMode:
+          type: string
+          enum: [cpu, gpu]
 
     TrainingJob:
       type: object
-      required: [id, modelId, modelName, datasetId, textColumn, labelColumn, epochs, learningRate, loraRank, status, createdAt]
+      required: [id, modelId, modelName, datasetId, textColumn, labelColumn, epochs, learningRate, loraRank, computeMode, status, createdAt]
       properties:
         id:
           type: string
@@ -267,6 +277,9 @@ components:
           type: number
         loraRank:
           type: integer
+        computeMode:
+          type: string
+          enum: [cpu, gpu]
         status:
           type: string
           enum: [queued, running, completed, failed]

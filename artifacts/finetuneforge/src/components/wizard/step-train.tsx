@@ -1,9 +1,14 @@
 import { useEffect, useRef, useState } from "react";
-import { useGetJob, useGetJobLogs } from "@workspace/api-client-react";
+import {
+  useGetJob,
+  useGetJobLogs,
+  getGetJobQueryKey,
+  getGetJobLogsQueryKey,
+} from "@workspace/api-client-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Download, Code, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, Download, Code, CheckCircle2, XCircle, Cpu, Zap } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 export function StepTrain({ jobId }: { jobId: string | null }) {
@@ -11,6 +16,7 @@ export function StepTrain({ jobId }: { jobId: string | null }) {
 
   const { data: job } = useGetJob(jobId, {
     query: {
+      queryKey: getGetJobQueryKey(jobId),
       refetchInterval: (query) => {
         const state = query.state.data?.status;
         return state === "running" || state === "queued" ? 2000 : false;
@@ -20,6 +26,7 @@ export function StepTrain({ jobId }: { jobId: string | null }) {
 
   const { data: logs } = useGetJobLogs(jobId, {
     query: {
+      queryKey: getGetJobLogsQueryKey(jobId),
       refetchInterval: (query) => {
         const state = query.state.data?.status;
         return state === "running" || state === "queued" ? 2000 : false;
@@ -66,12 +73,23 @@ export function StepTrain({ jobId }: { jobId: string | null }) {
           </p>
         </div>
         
-        <Badge 
-          variant={isCompleted ? "default" : isFailed ? "destructive" : "secondary"}
-          className={`text-sm px-3 py-1 ${isRunning ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400" : ""}`}
-        >
-          {job?.status || "Starting..."}
-        </Badge>
+        <div className="flex items-center gap-2">
+          {job?.computeMode === "gpu" ? (
+            <Badge className="text-sm px-3 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border-0 gap-1">
+              <Zap className="w-3.5 h-3.5" /> Training on Modal A10G GPU ⚡
+            </Badge>
+          ) : job?.computeMode === "cpu" ? (
+            <Badge variant="outline" className="text-sm px-3 py-1 gap-1">
+              <Cpu className="w-3.5 h-3.5" /> Training on Replit CPU
+            </Badge>
+          ) : null}
+          <Badge
+            variant={isCompleted ? "default" : isFailed ? "destructive" : "secondary"}
+            className={`text-sm px-3 py-1 ${isRunning ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400" : ""}`}
+          >
+            {job?.status || "Starting..."}
+          </Badge>
+        </div>
       </div>
 
       {(isCompleted || isFailed) && job && (

@@ -23,9 +23,11 @@ export const ListModelsResponseItem = zod.object({
   id: zod.string(),
   name: zod.string(),
   paramCount: zod.string(),
-  estimatedMinutes: zod.number(),
+  estimatedMinutesCpu: zod.number().nullish(),
+  estimatedMinutesGpu: zod.number().nullish(),
   description: zod.string(),
   taskType: zod.string(),
+  computeModes: zod.array(zod.enum(["cpu", "gpu"])),
 });
 export const ListModelsResponse = zod.array(ListModelsResponseItem);
 
@@ -56,6 +58,7 @@ export const ListJobsResponseItem = zod.object({
   epochs: zod.number(),
   learningRate: zod.number(),
   loraRank: zod.number(),
+  computeMode: zod.enum(["cpu", "gpu"]),
   status: zod.enum(["queued", "running", "completed", "failed"]),
   createdAt: zod.coerce.date(),
   startedAt: zod.coerce.date().nullish(),
@@ -81,6 +84,7 @@ export const CreateJobBody = zod.object({
   epochs: zod.number().min(1).max(createJobBodyEpochsMax),
   learningRate: zod.number(),
   loraRank: zod.union([zod.literal(4), zod.literal(8), zod.literal(16)]),
+  computeMode: zod.enum(["cpu", "gpu"]),
 });
 
 /**
@@ -101,6 +105,7 @@ export const GetJobResponse = zod.object({
   epochs: zod.number(),
   learningRate: zod.number(),
   loraRank: zod.number(),
+  computeMode: zod.enum(["cpu", "gpu"]),
   status: zod.enum(["queued", "running", "completed", "failed"]),
   createdAt: zod.coerce.date(),
   startedAt: zod.coerce.date().nullish(),

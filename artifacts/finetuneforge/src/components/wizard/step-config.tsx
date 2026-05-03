@@ -4,8 +4,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Loader2 } from "lucide-react";
-import { CreateJobBodyLoraRank } from "@workspace/api-client-react";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, Cpu, Zap, Info } from "lucide-react";
+import { CreateJobBodyLoraRank, useListModels } from "@workspace/api-client-react";
 
 export function StepConfig({
   state,
@@ -20,6 +21,20 @@ export function StepConfig({
   onStart: () => void;
   isPending: boolean;
 }) {
+  const { data: models } = useListModels();
+
+  const handleSelectMode = (mode: "cpu" | "gpu") => {
+    if (mode === state.computeMode) return;
+    const updates: Partial<WizardState> = { computeMode: mode };
+    if (mode === "cpu") {
+      const selected = models?.find((m) => m.id === state.modelId);
+      if (!selected || !selected.computeModes.includes("cpu")) {
+        updates.modelId = "distilbert-base-uncased";
+      }
+    }
+    updateState(updates);
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
@@ -30,6 +45,48 @@ export function StepConfig({
       <Card>
         <CardContent className="p-6 space-y-8">
           <div className="space-y-4">
+            <Label className="text-base font-semibold">Compute</Label>
+            <p className="text-sm text-muted-foreground -mt-2">
+              Choose where this fine-tuning job runs.
+            </p>
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => handleSelectMode("cpu")}
+                className={`flex items-center justify-center gap-2 rounded-full border-2 py-3 px-4 text-sm font-medium transition-colors ${
+                  state.computeMode === "cpu"
+                    ? "border-primary bg-primary/5 text-primary"
+                    : "border-muted bg-popover hover:bg-accent hover:text-accent-foreground"
+                }`}
+                data-testid="button-compute-cpu"
+              >
+                <Cpu className="w-4 h-4" /> CPU (Free)
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSelectMode("gpu")}
+                className={`flex items-center justify-center gap-2 rounded-full border-2 py-3 px-4 text-sm font-medium transition-colors ${
+                  state.computeMode === "gpu"
+                    ? "border-primary bg-primary/5 text-primary"
+                    : "border-muted bg-popover hover:bg-accent hover:text-accent-foreground"
+                }`}
+                data-testid="button-compute-gpu"
+              >
+                <Zap className="w-4 h-4" /> GPU (Modal A10G)
+                <Badge className="ml-1 bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border-0 text-[10px] px-1.5 py-0">
+                  Faster · Larger models
+                </Badge>
+              </button>
+            </div>
+            {state.computeMode === "gpu" && (
+              <div className="flex items-start gap-2 rounded-md border border-blue-200 dark:border-blue-900/50 bg-blue-50 dark:bg-blue-950/30 px-3 py-2 text-sm text-blue-900 dark:text-blue-200">
+                <Info className="w-4 h-4 mt-0.5 shrink-0" />
+                <span>Requires Modal credits. Training runs on an A10G GPU.</span>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-4 pt-4 border-t border-border">
             <div className="flex justify-between items-center">
               <Label className="text-base font-semibold">Epochs</Label>
               <span className="font-mono text-sm bg-muted px-2 py-1 rounded">{state.epochs}</span>

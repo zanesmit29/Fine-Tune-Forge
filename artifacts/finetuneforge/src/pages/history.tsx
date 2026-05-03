@@ -1,5 +1,12 @@
 import { useState, useEffect, useRef } from "react";
-import { useGetJobStats, useListJobs, useGetJob, useGetJobLogs } from "@workspace/api-client-react";
+import {
+  useGetJobStats,
+  useListJobs,
+  useGetJob,
+  useGetJobLogs,
+  getGetJobQueryKey,
+  getGetJobLogsQueryKey,
+} from "@workspace/api-client-react";
 import { Layout } from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +35,7 @@ function JobDetailSheet({ jobId, open, onClose }: { jobId: string; open: boolean
 
   const { data: job } = useGetJob(jobId, {
     query: {
+      queryKey: getGetJobQueryKey(jobId),
       enabled: open,
       refetchInterval: (query) => {
         const s = query.state.data?.status;
@@ -38,6 +46,7 @@ function JobDetailSheet({ jobId, open, onClose }: { jobId: string; open: boolean
 
   const { data: logs } = useGetJobLogs(jobId, {
     query: {
+      queryKey: getGetJobLogsQueryKey(jobId),
       enabled: open,
       refetchInterval: (query) => {
         const s = query.state.data?.status;

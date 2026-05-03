@@ -9,13 +9,25 @@ export interface HealthStatus {
   status: string;
 }
 
+export type ModelInfoComputeModesItem =
+  (typeof ModelInfoComputeModesItem)[keyof typeof ModelInfoComputeModesItem];
+
+export const ModelInfoComputeModesItem = {
+  cpu: "cpu",
+  gpu: "gpu",
+} as const;
+
 export interface ModelInfo {
   id: string;
   name: string;
   paramCount: string;
-  estimatedMinutes: number;
+  /** @nullable */
+  estimatedMinutesCpu?: number | null;
+  /** @nullable */
+  estimatedMinutesGpu?: number | null;
   description: string;
   taskType: string;
+  computeModes: ModelInfoComputeModesItem[];
 }
 
 export type DatasetPreviewPreviewRowsItem = { [key: string]: string };
@@ -40,6 +52,14 @@ export const CreateJobBodyLoraRank = {
   NUMBER_16: 16,
 } as const;
 
+export type CreateJobBodyComputeMode =
+  (typeof CreateJobBodyComputeMode)[keyof typeof CreateJobBodyComputeMode];
+
+export const CreateJobBodyComputeMode = {
+  cpu: "cpu",
+  gpu: "gpu",
+} as const;
+
 export interface CreateJobBody {
   modelId: string;
   datasetId: string;
@@ -52,7 +72,16 @@ export interface CreateJobBody {
   epochs: number;
   learningRate: number;
   loraRank: CreateJobBodyLoraRank;
+  computeMode: CreateJobBodyComputeMode;
 }
+
+export type TrainingJobComputeMode =
+  (typeof TrainingJobComputeMode)[keyof typeof TrainingJobComputeMode];
+
+export const TrainingJobComputeMode = {
+  cpu: "cpu",
+  gpu: "gpu",
+} as const;
 
 export type TrainingJobStatus =
   (typeof TrainingJobStatus)[keyof typeof TrainingJobStatus];
@@ -74,6 +103,7 @@ export interface TrainingJob {
   epochs: number;
   learningRate: number;
   loraRank: number;
+  computeMode: TrainingJobComputeMode;
   status: TrainingJobStatus;
   createdAt: string;
   /** @nullable */

@@ -12,6 +12,7 @@ export const trainingJobsTable = pgTable("training_jobs", {
   epochs: integer("epochs").notNull(),
   learningRate: real("learning_rate").notNull(),
   loraRank: integer("lora_rank").notNull(),
+  computeMode: text("compute_mode").notNull().default("cpu"),
   status: text("status").notNull().default("queued"),
   logLines: text("log_lines").notNull().default("[]"),
   trainLoss: real("train_loss"),
