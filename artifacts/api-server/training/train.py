@@ -370,22 +370,6 @@ try:
     with open(os.path.join(args.output_dir, "metrics.json"), "w") as f:
         json.dump(metrics, f)
 
-    log("[FineTuneForge] Exporting additional formats...")
-    try:
-        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-        from exports import export_onnx, export_gguf
-        onnx_path = export_onnx(model, tokenizer, args.output_dir)
-        gguf_path = export_gguf(model, tokenizer, args.output_dir)
-    except Exception as _exp_err:
-        log(f"  [warn] Export module failed: {_exp_err}")
-        onnx_path = None
-        gguf_path = None
-    log(
-        f"[FineTuneForge] Exports — pkl:ok"
-        f" onnx:{'ok' if onnx_path else '—'}"
-        f" gguf:{'ok' if gguf_path else '—'}"
-    )
-
     log(f"[FineTuneForge] DONE — train_loss={train_loss:.4f} eval_loss={eval_loss:.4f} accuracy={accuracy*100:.2f}%")
     sys.exit(0)
 

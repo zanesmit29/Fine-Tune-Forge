@@ -1,0 +1,71 @@
+Feature: Rework App Around Two Working Task Types
+
+Restructure the app so it is built around specific task types 
+rather than a generic "upload any CSV" flow. Two tasks are 
+fully functional; the rest show as "Coming Soon".
+
+Task Type Selector — New Step 0 (before the wizard):
+1. Add a Task Type selection screen as the entry point to the 
+   app, before the 4-step wizard begins
+2. Show a grid of task type cards:
+
+   AVAILABLE (fully clickable):
+   - "Text Classification" — classify text into custom categories
+     Example: support tickets, product feedback, topic tagging
+   - "Sentiment Analysis" — detect positive, negative, or neutral 
+     tone in text
+     Example: reviews, social posts, survey responses
+
+   COMING SOON (greyed out, not clickable, with a "Coming Soon" 
+   badge):
+   - "Named Entity Recognition"
+   - "Text Summarization"
+   - "Question & Answer Fine-Tuning"
+   - "Instruction Tuning"
+
+3. Clicking an available card enters the 4-step wizard 
+   pre-configured for that task type
+4. The selected task type is shown as a breadcrumb/tag 
+   throughout the wizard (e.g. "Sentiment Analysis · Step 2 of 4")
+
+Task-Specific Dataset Templates (Step 2 of wizard):
+Text Classification:
+- Template: customer_support.csv (columns: text, category — 
+  5 support categories, 200 rows)
+- Template: topic_classifier.csv (columns: text, topic — 
+  technology/sport/politics/health, 200 rows)
+
+Sentiment Analysis:
+- Template: product_reviews.csv (columns: text, sentiment — 
+  positive/negative/neutral, 200 rows)
+- Template: social_posts.csv (columns: text, sentiment — 
+  positive/negative, 200 rows)
+
+Each template card shows: name, column schema, row count, 
+"Use template" button, and "Download CSV" link.
+Users can still upload their own CSV — templates are an 
+option, not a requirement.
+
+Model Picker (Step 1):
+- Pre-filter recommended models per task type:
+  Classification → DistilBERT, BERT-Tiny (CPU); 
+                   DeBERTa-v3-base (GPU)
+  Sentiment      → DistilBERT, BERT-Tiny (CPU); 
+                   RoBERTa-base (GPU)
+- Show a "Recommended" badge on the best model per task
+
+Results Page:
+- Show task-specific output metrics:
+  Classification → accuracy, per-class F1 score, confusion matrix
+  Sentiment      → accuracy, positive/negative/neutral breakdown 
+                   as a small bar chart
+
+UI:
+- Coming Soon cards: greyed out (#9CA3AF text), dashed border, 
+  "Coming Soon" pill badge in slate
+- Available cards: normal styling with a hover lift effect
+- Selected card: blue accent border, checkmark icon top-right
+
+Do not change the GPU/CPU toggle, export formats, training 
+logic, or overall wizard styling. Only add the Task Type 
+screen and rework Step 1 and Step 2 to be task-aware.
