@@ -1,0 +1,49 @@
+Feature: GPU/CPU Toggle + Modal GPU Backend
+
+Add a compute selector to the Config step (Step 3) so users 
+can choose between CPU (free, Replit built-in) and GPU 
+(Modal A10G, faster, larger models).
+
+Backend:
+1. Install modal via pip. Add MODAL_TOKEN_ID and 
+   MODAL_TOKEN_SECRET to Replit Secrets.
+2. Create modal_trainer.py with a @app.function(gpu="A10G") 
+   decorated training function — accepts model_name, 
+   dataset_path, epochs, learning_rate, lora_rank.
+   Inside: tokenize dataset, apply PEFT/LoRA, run Trainer, 
+   return model bytes.
+3. Keep the existing CPU BackgroundTask runner as-is.
+4. In the /train endpoint, read a compute_mode field from 
+   the request body ("cpu" or "gpu"). Route accordingly:
+   - "cpu" → existing BackgroundTask runner
+   - "gpu" → modal_trainer.train.remote()
+5. SSE log streaming must work for both paths.
+
+Frontend (Step 3 — Config):
+1. Add a compute selector above the sliders:
+   - Two pill buttons: "CPU (Free)" and "GPU (Modal A10G)"
+   - CPU is selected by default
+   - GPU option shows a small badge: "Faster · Larger models"
+2. When GPU is selected, show an inline info note:
+   "Requires Modal credits. Training runs on an A10G GPU."
+   Style as a soft blue info banner (border + light bg).
+3. Pass compute_mode: "cpu" | "gpu" in the /train POST body.
+
+Model Picker (Step 1):
+1. When CPU is active, show only: DistilBERT, GPT-2-small, 
+   Qwen2.5-0.5B — with CPU-accurate time estimates.
+2. When GPU is active, additionally unlock: Mistral-7B + LoRA, 
+   Llama-3.2-3B + LoRA — with GPU-accurate time estimates.
+3. The model list must update reactively when the user 
+   switches compute mode in Step 3. If a CPU-only model is 
+   selected and the user switches to GPU, keep the selection. 
+   If a GPU-only model is selected and the user switches 
+   back to CPU, reset to DistilBERT.
+
+Status badge during training:
+- CPU run: "Training on Replit CPU"
+- GPU run: "Training on Modal A10G GPU ⚡"
+
+Do not change UI styling, export formats, or Step 2 (data 
+upload). Only modify Step 1 model picker, Step 3 config, 
+and the backend /train routing logic.
