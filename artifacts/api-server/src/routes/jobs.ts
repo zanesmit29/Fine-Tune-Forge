@@ -180,10 +180,17 @@ async function runTraining(
 
   proc.stderr.on("data", async (chunk: Buffer) => {
     const text = chunk.toString("utf-8").trim();
-    for (const line of text.split("\n")) {
-      if (line.trim()) {
-        await appendLog(jobId, `[WARN] ${line}`);
+    for (const rawLine of text.split("\n")) {
+      const line = rawLine.trim();
+      if (!line) continue;
+      // Skip benign tqdm progress redraws — they're chatter, not warnings.
+      // Anchored: tqdm always renders "<label>: <pct>%|<bar>| <n>/<total> [<elapsed><...>]".
+      if (/^\S.*?:?\s*\d{1,3}%\|[^|]*\|\s*\d+\/\d+\b/.test(line)) {
+        continue;
       }
+      // Don't double-prefix lines the script already tagged.
+      const alreadyTagged = /^\[(FineTuneForge|ERROR|WARN|INFO|\d+\/\d+)\]/.test(line);
+      await appendLog(jobId, alreadyTagged ? line : `[WARN] ${line}`);
     }
   });
 

@@ -20,7 +20,29 @@ import warnings
 
 warnings.filterwarnings("ignore")
 
+# Quiet down HF / transformers / datasets stderr noise so the user's job log
+# stays readable. We turn off tqdm progress bars (they spam line-per-update)
+# and lower the log level to errors only — actual problems still surface.
+os.environ.setdefault("TRANSFORMERS_VERBOSITY", "error")
+os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
+os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
+os.environ.setdefault("DATASETS_VERBOSITY", "error")
+os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
+
 import pandas as pd
+
+try:
+    import datasets as _hf_datasets
+    _hf_datasets.disable_progress_bars()
+except Exception:
+    pass
+
+try:
+    import transformers as _hf_transformers
+    _hf_transformers.logging.set_verbosity_error()
+    _hf_transformers.utils.logging.disable_progress_bar()
+except Exception:
+    pass
 
 # ---------------------------------------------------------------------------
 # Argument parsing
@@ -284,8 +306,8 @@ try:
 
     train_dataset = Dataset.from_pandas(train_df[[args.text_column, "encoded_label"]])
     eval_dataset  = Dataset.from_pandas(eval_df[[args.text_column, "encoded_label"]])
-    train_dataset = train_dataset.map(tokenize, batched=True, desc="Tokenizing train")
-    eval_dataset  = eval_dataset.map(tokenize, batched=True, desc="Tokenizing eval")
+    train_dataset = train_dataset.map(tokenize, batched=True)
+    eval_dataset  = eval_dataset.map(tokenize, batched=True)
     train_dataset = train_dataset.rename_column("encoded_label", "labels")
     eval_dataset  = eval_dataset.rename_column("encoded_label", "labels")
     train_dataset.set_format("torch", columns=["input_ids", "attention_mask", "labels"])
