@@ -18,7 +18,7 @@ export function StepModel({
   const isGpu = state.computeMode === "gpu";
 
   const visibleModels = (models ?? []).filter((m) =>
-    m.computeModes.includes(state.computeMode),
+    (m.computeModes ?? ["cpu"]).includes(state.computeMode),
   );
 
   return (
@@ -45,7 +45,7 @@ export function StepModel({
             const minutes = isGpu
               ? model.estimatedMinutesGpu
               : model.estimatedMinutesCpu;
-            const isGpuOnly = !model.computeModes.includes("cpu");
+            const isGpuOnly = !(model.computeModes ?? ["cpu"]).includes("cpu");
             return (
               <Card
                 key={model.id}

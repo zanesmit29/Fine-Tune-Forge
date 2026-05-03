@@ -28,7 +28,7 @@ export function StepConfig({
     const updates: Partial<WizardState> = { computeMode: mode };
     if (mode === "cpu") {
       const selected = models?.find((m) => m.id === state.modelId);
-      if (!selected || !selected.computeModes.includes("cpu")) {
+      if (!selected || !(selected.computeModes ?? ["cpu"]).includes("cpu")) {
         updates.modelId = "distilbert-base-uncased";
       }
     }
