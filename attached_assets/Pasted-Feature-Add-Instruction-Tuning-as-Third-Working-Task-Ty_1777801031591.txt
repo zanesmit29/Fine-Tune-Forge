@@ -1,0 +1,68 @@
+Feature: Add Instruction Tuning as Third Working Task Type
+
+Add "Instruction Tuning" as a third fully functional task 
+type alongside Text Classification and Sentiment Analysis.
+This task produces a GGUF export optimized for LM Studio.
+
+Task Type Selector:
+1. Move "Instruction Tuning" from "Coming Soon" to available
+2. Card description: "Fine-tune a generative model on your 
+   own Q&A or instruction data. Export to GGUF and run 
+   locally in LM Studio."
+3. Add a small "LM Studio ready" badge on the card in green
+
+Model Picker (Step 1) for Instruction Tuning:
+- CPU: GPT-2 small (124M), Qwen2.5-0.5B
+- GPU: Qwen2.5-1.5B + LoRA, Qwen2.5-3B + LoRA
+- Default recommended model: Qwen2.5-0.5B (CPU) or 
+  Qwen2.5-1.5B (GPU)
+- Show a note: "These models support GGUF export for 
+  use in LM Studio and Ollama"
+
+Dataset Templates (Step 2) for Instruction Tuning:
+Create two CSV templates with columns: instruction, response
+- company_faq.csv — 50 rows of realistic company FAQ pairs
+  Example rows:
+  "What are your support hours?", "Our support team is 
+  available Monday to Friday, 9am to 6pm CET."
+  "How do I reset my password?", "Click Forgot Password 
+  on the login page and follow the email instructions."
+- product_assistant.csv — 50 rows of product Q&A pairs
+  Example rows:
+  "What file formats do you support?", "We support CSV, 
+  JSON, and Excel files up to 50MB."
+  "Can I cancel my subscription?", "Yes, you can cancel 
+  anytime from your account settings."
+
+Training Config (Step 3) for Instruction Tuning:
+- Use a causal language modeling objective (not sequence 
+  classification)
+- Apply chat template formatting: 
+  "### Instruction:\n{instruction}\n### Response:\n{response}"
+- Add a "Max sequence length" slider (128 / 256 / 512 tokens)
+- LoRA config: r=8, alpha=16, target_modules=["q_proj","v_proj"]
+
+Export (Results Page) for Instruction Tuning:
+1. GGUF is the PRIMARY export format — show it first and 
+   largest on the results page
+2. Add an "Open in LM Studio" instruction panel:
+   - Numbered steps with icons:
+     1. Download the .gguf file
+     2. Open LM Studio → My Models → Add Model
+     3. Select the downloaded .gguf file
+     4. Start chatting with your fine-tuned model
+   - Style as a light blue info card with a 
+     "LM Studio Guide" heading
+3. Still offer PKL and ONNX as secondary downloads
+
+Results Metrics for Instruction Tuning:
+- Show training loss curve (simple line chart — 
+  loss value per epoch)
+- Show final perplexity score
+- Show a sample inference panel: one instruction from 
+  the dataset with the model's generated response, 
+  so users can immediately see the model working
+
+Do not change Text Classification or Sentiment Analysis 
+task types, sidebar navigation, color palette, My Models 
+table, or any other part of the app.
