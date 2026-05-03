@@ -275,6 +275,7 @@ def train_remote(
                 },
                 opset_version=14,
                 do_constant_folding=True,
+                dynamo=False,
             )
         onnx_bytes = onnx_buf.getvalue()
         yield f"  ONNX export OK ({len(onnx_bytes)} bytes)"

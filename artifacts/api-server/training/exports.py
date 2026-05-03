@@ -20,7 +20,7 @@ from typing import Optional
 
 
 _GGUF_CONVERT_URL = (
-    "https://raw.githubusercontent.com/ggerganov/llama.cpp/master/"
+    "https://raw.githubusercontent.com/ggml-org/llama.cpp/b4615/"
     "convert_hf_to_gguf.py"
 )
 _GGUF_CONVERT_CACHE = os.path.join(
@@ -66,9 +66,40 @@ def export_onnx(model, tokenizer, output_dir: str) -> Optional[str]:
                     "attention_mask": {0: "batch", 1: "seq"},
                     "logits": {0: "batch"},
                 },
-                opset_version=14,
+                opset_version=17,
                 do_constant_folding=True,
+                dynamo=True,
             )
+
+        # The dynamo exporter writes large weights to a sidecar `.onnx.data`
+        # file. Inline them so the single `model.onnx` download is complete.
+        # If inlining fails the artifact is incomplete — treat as failure
+        # rather than serving a broken file via /download/onnx.
+        sidecar = out_path + ".data"
+        if os.path.exists(sidecar):
+            try:
+                import onnx  # type: ignore
+                from onnx.external_data_helper import (  # type: ignore
+                    load_external_data_for_model,
+                )
+
+                model_proto = onnx.load(out_path, load_external_data=False)
+                load_external_data_for_model(model_proto, output_dir)
+                onnx.save_model(model_proto, out_path, save_as_external_data=False)
+                try:
+                    os.remove(sidecar)
+                except OSError:
+                    pass
+            except Exception as e:  # noqa: BLE001
+                _log(f"  [warn] ONNX export skipped: weight inlining failed: {e}")
+                for p in (out_path, sidecar):
+                    try:
+                        if os.path.exists(p):
+                            os.remove(p)
+                    except OSError:
+                        pass
+                return None
+
         _log(f"  ONNX export → {out_path}")
         return out_path
     except Exception as e:  # noqa: BLE001

@@ -76,8 +76,8 @@ Server-side `POST /api/jobs` enforces model/computeMode compatibility (rejects G
 
 After training completes, the server attempts to write three artifacts in `results/{jobId}/`:
 - `model.pkl` — pickle of the LoRA-merged model state dict (always produced)
-- `model.onnx` — `torch.onnx.export` with dummy `(input_ids, attention_mask)` inputs (best-effort)
-- `model.gguf` — converted via llama.cpp's `convert_hf_to_gguf.py` (best-effort, downloaded once into `~/.cache/finetuneforge/`)
+- `model.onnx` — `torch.onnx.export` with `dynamo=True`, opset 17, dummy `(input_ids, attention_mask)` inputs. The dynamo exporter writes weights to a sidecar `.onnx.data`; we post-process with `onnx.save_model(..., save_as_external_data=False)` so the download is a single self-contained file. Requires `onnx` + `onnxscript` Python packages.
+- `model.gguf` — converted via llama.cpp's `convert_hf_to_gguf.py`, pinned to tag **b4615** (newer master commits add `mistral_common` / `GEMMA4` requirements that don't exist in `gguf 0.18.0`). Downloaded once into `~/.cache/finetuneforge/`. Requires `gguf` + `sentencepiece` Python packages. **Limitation:** the converter explicitly rejects classification heads (e.g. `DistilBertForSequenceClassification`); GGUF only succeeds for causal-LM architectures like GPT-2 / Llama / Qwen / Mistral. The route returns 404 with a tooltip-explained disabled button when unsupported.
 
 Logic lives in `artifacts/api-server/training/exports.py` and is called from both `train.py` (CPU) and `modal_trainer.py` (GPU; GGUF skipped in remote worker). On training process exit, `jobs.ts` scans the results dir and stores the resolved paths in the new `pkl_path`, `onnx_path`, `gguf_path` columns. Download routes:
 - `GET /api/jobs/:jobId/download/pkl` (alias: `/download/model`)
