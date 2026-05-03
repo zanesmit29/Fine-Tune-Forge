@@ -48,12 +48,15 @@ function detectExportPaths(jobId: string): {
   };
 }
 
-function formatJob(row: typeof trainingJobsTable.$inferSelect) {
+export function formatJob(row: typeof trainingJobsTable.$inferSelect) {
   return {
     id: row.id,
     modelId: row.modelId,
     modelName: row.modelName,
+    nickname: row.nickname ?? null,
+    taskType: row.taskType ?? null,
     datasetId: row.datasetId,
+    datasetName: row.datasetName ?? null,
     textColumn: row.textColumn,
     labelColumn: row.labelColumn,
     epochs: row.epochs,
@@ -307,7 +310,9 @@ router.post("/jobs", async (req, res): Promise<void> => {
       id: jobId,
       modelId: body.modelId,
       modelName: MODEL_NAMES[body.modelId] ?? body.modelId,
+      taskType: body.taskType ?? null,
       datasetId: body.datasetId,
+      datasetName: body.datasetName ?? null,
       textColumn: body.textColumn,
       labelColumn: body.labelColumn,
       epochs: body.epochs,

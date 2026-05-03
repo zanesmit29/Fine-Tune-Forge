@@ -159,6 +159,72 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /trained-models:
+    get:
+      operationId: listTrainedModels
+      tags: [jobs]
+      summary: List all completed trained models
+      description: Returns all completed jobs with their metadata for the model library
+      responses:
+        "200":
+          description: List of trained models
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TrainingJob"
+
+  /trained-models/{jobId}:
+    patch:
+      operationId: renameTrainedModel
+      tags: [jobs]
+      summary: Update the nickname of a trained model
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RenameTrainedModelBody"
+      responses:
+        "200":
+          description: Updated job
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingJob"
+        "404":
+          description: Job not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteTrainedModel
+      tags: [jobs]
+      summary: Delete a trained model and its files
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Job not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /jobs/stats/summary:
     get:
       operationId: getJobStats
@@ -236,8 +302,12 @@ components:
       properties:
         modelId:
           type: string
+        taskType:
+          type: ["string", "null"]
         datasetId:
           type: string
+        datasetName:
+          type: ["string", "null"]
         textColumn:
           type: string
         labelColumn:
@@ -265,8 +335,14 @@ components:
           type: string
         modelName:
           type: string
+        nickname:
+          type: ["string", "null"]
+        taskType:
+          type: ["string", "null"]
         datasetId:
           type: string
+        datasetName:
+          type: ["string", "null"]
         textColumn:
           type: string
         labelColumn:
@@ -337,6 +413,15 @@ components:
           type: integer
         avgTrainLoss:
           type: ["number", "null"]
+
+    RenameTrainedModelBody:
+      type: object
+      required: [nickname]
+      properties:
+        nickname:
+          type: string
+          minLength: 1
+          maxLength: 200
 
     ErrorResponse:
       type: object

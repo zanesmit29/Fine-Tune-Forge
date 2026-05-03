@@ -51,6 +51,7 @@ export function StepData({
       if (!data) return;
       updateState({
         datasetPreview: data,
+        datasetName: file.name,
         textColumn: data.detectedTextColumn || data.columns[0] || "",
         labelColumn: data.detectedLabelColumn || data.columns[1] || "",
       });
@@ -74,6 +75,7 @@ export function StepData({
       if (!data) return;
       updateState({
         datasetPreview: data,
+        datasetName: tpl.name,
         textColumn: data.detectedTextColumn || tpl.textColumn,
         labelColumn: data.detectedLabelColumn || tpl.labelColumn,
       });

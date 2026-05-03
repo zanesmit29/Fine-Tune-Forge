@@ -52,7 +52,10 @@ export const ListJobsResponseItem = zod.object({
   id: zod.string(),
   modelId: zod.string(),
   modelName: zod.string(),
+  nickname: zod.string().nullish(),
+  taskType: zod.string().nullish(),
   datasetId: zod.string(),
+  datasetName: zod.string().nullish(),
   textColumn: zod.string(),
   labelColumn: zod.string(),
   epochs: zod.number(),
@@ -96,7 +99,9 @@ export const createJobBodyEpochsMax = 5;
 
 export const CreateJobBody = zod.object({
   modelId: zod.string(),
+  taskType: zod.string().nullish(),
   datasetId: zod.string(),
+  datasetName: zod.string().nullish(),
   textColumn: zod.string(),
   labelColumn: zod.string(),
   epochs: zod.number().min(1).max(createJobBodyEpochsMax),
@@ -117,7 +122,10 @@ export const GetJobResponse = zod.object({
   id: zod.string(),
   modelId: zod.string(),
   modelName: zod.string(),
+  nickname: zod.string().nullish(),
+  taskType: zod.string().nullish(),
   datasetId: zod.string(),
+  datasetName: zod.string().nullish(),
   textColumn: zod.string(),
   labelColumn: zod.string(),
   epochs: zod.number(),
@@ -164,6 +172,117 @@ export const GetJobLogsResponse = zod.object({
   jobId: zod.string(),
   lines: zod.array(zod.string()),
   status: zod.string(),
+});
+
+/**
+ * Returns all completed jobs with their metadata for the model library
+ * @summary List all completed trained models
+ */
+export const ListTrainedModelsResponseItem = zod.object({
+  id: zod.string(),
+  modelId: zod.string(),
+  modelName: zod.string(),
+  nickname: zod.string().nullish(),
+  taskType: zod.string().nullish(),
+  datasetId: zod.string(),
+  datasetName: zod.string().nullish(),
+  textColumn: zod.string(),
+  labelColumn: zod.string(),
+  epochs: zod.number(),
+  learningRate: zod.number(),
+  loraRank: zod.number(),
+  computeMode: zod.enum(["cpu", "gpu"]),
+  status: zod.enum(["queued", "running", "completed", "failed"]),
+  createdAt: zod.coerce.date(),
+  startedAt: zod.coerce.date().nullish(),
+  completedAt: zod.coerce.date().nullish(),
+  trainLoss: zod.number().nullish(),
+  evalLoss: zod.number().nullish(),
+  accuracy: zod.number().nullish(),
+  errorMessage: zod.string().nullish(),
+  pklPath: zod
+    .string()
+    .nullish()
+    .describe(
+      "Server-relative path to the .pkl export, or null if not available",
+    ),
+  onnxPath: zod
+    .string()
+    .nullish()
+    .describe(
+      "Server-relative path to the .onnx export, or null if not available",
+    ),
+  ggufPath: zod
+    .string()
+    .nullish()
+    .describe(
+      "Server-relative path to the .gguf export, or null if not available",
+    ),
+});
+export const ListTrainedModelsResponse = zod.array(
+  ListTrainedModelsResponseItem,
+);
+
+/**
+ * @summary Update the nickname of a trained model
+ */
+export const RenameTrainedModelParams = zod.object({
+  jobId: zod.coerce.string(),
+});
+
+export const renameTrainedModelBodyNicknameMax = 200;
+
+export const RenameTrainedModelBody = zod.object({
+  nickname: zod.string().min(1).max(renameTrainedModelBodyNicknameMax),
+});
+
+export const RenameTrainedModelResponse = zod.object({
+  id: zod.string(),
+  modelId: zod.string(),
+  modelName: zod.string(),
+  nickname: zod.string().nullish(),
+  taskType: zod.string().nullish(),
+  datasetId: zod.string(),
+  datasetName: zod.string().nullish(),
+  textColumn: zod.string(),
+  labelColumn: zod.string(),
+  epochs: zod.number(),
+  learningRate: zod.number(),
+  loraRank: zod.number(),
+  computeMode: zod.enum(["cpu", "gpu"]),
+  status: zod.enum(["queued", "running", "completed", "failed"]),
+  createdAt: zod.coerce.date(),
+  startedAt: zod.coerce.date().nullish(),
+  completedAt: zod.coerce.date().nullish(),
+  trainLoss: zod.number().nullish(),
+  evalLoss: zod.number().nullish(),
+  accuracy: zod.number().nullish(),
+  errorMessage: zod.string().nullish(),
+  pklPath: zod
+    .string()
+    .nullish()
+    .describe(
+      "Server-relative path to the .pkl export, or null if not available",
+    ),
+  onnxPath: zod
+    .string()
+    .nullish()
+    .describe(
+      "Server-relative path to the .onnx export, or null if not available",
+    ),
+  ggufPath: zod
+    .string()
+    .nullish()
+    .describe(
+      "Server-relative path to the .gguf export, or null if not available",
+    ),
+});
+
+/**
+ * @summary Delete a trained model and its files
+ */
+export const DeleteTrainedModelParams = zod.object({
+  jobId: zod.coerce.string(),
 });
 
 /**

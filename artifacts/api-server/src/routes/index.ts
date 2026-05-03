@@ -3,6 +3,7 @@ import healthRouter from "./health";
 import modelsRouter from "./models";
 import uploadRouter from "./upload";
 import jobsRouter from "./jobs";
+import libraryRouter from "./library";
 
 const router: IRouter = Router();
 
@@ -10,5 +11,6 @@ router.use(healthRouter);
 router.use(modelsRouter);
 router.use(uploadRouter);
 router.use(jobsRouter);
+router.use(libraryRouter);
 
 export default router;

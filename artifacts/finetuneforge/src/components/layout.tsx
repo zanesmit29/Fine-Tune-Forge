@@ -1,8 +1,10 @@
 import { Link, useLocation } from "wouter";
 import { Cpu } from "lucide-react";
+import { useNavHighlight } from "@/lib/nav-highlight";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
+  const { highlightMyModels } = useNavHighlight();
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -28,17 +30,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
               }`}
             >
-              Wizard
+              New Fine-Tune
             </Link>
             <Link
-              href="/history"
-              className={`flex items-center px-4 text-sm font-medium border-b-2 transition-colors duration-150 ${
-                location === "/history"
+              href="/my-models"
+              className={`relative flex items-center px-4 text-sm font-medium border-b-2 transition-colors duration-150 ${
+                location === "/my-models"
                   ? "border-primary text-primary"
                   : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
-              }`}
+              } ${highlightMyModels && location !== "/my-models" ? "animate-pulse text-primary" : ""}`}
             >
-              History
+              My Models
+              {highlightMyModels && location !== "/my-models" && (
+                <span className="ml-2 inline-block w-2 h-2 rounded-full bg-primary animate-ping" />
+              )}
             </Link>
           </nav>
         </div>

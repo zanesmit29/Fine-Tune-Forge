@@ -6,6 +6,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import History from "@/pages/history";
+import MyModels from "@/pages/my-models";
+import { NavHighlightContext } from "@/lib/nav-highlight";
 import type { WizardState } from "@/pages/home";
 import type { CreateJobBodyLoraRank } from "@workspace/api-client-react";
 import type { TaskTypeId } from "@/lib/task-types";
@@ -16,6 +18,7 @@ const defaultWizardState: WizardState = {
   taskType: null,
   modelId: "",
   datasetPreview: null,
+  datasetName: null,
   textColumn: "",
   labelColumn: "",
   epochs: 3,
@@ -28,6 +31,7 @@ const defaultWizardState: WizardState = {
 function App() {
   const [wizardStep, setWizardStep] = useState(0);
   const [wizardState, setWizardState] = useState<WizardState>(defaultWizardState);
+  const [highlightMyModels, setHighlightMyModels] = useState(false);
 
   const setTaskType = (id: TaskTypeId) => {
     setWizardState({ ...defaultWizardState, taskType: id });
@@ -39,26 +43,40 @@ function App() {
     setWizardStep(0);
   };
 
+  const triggerHighlight = () => {
+    setHighlightMyModels(true);
+    window.setTimeout(() => setHighlightMyModels(false), 6000);
+  };
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <Switch>
-            <Route path="/">
-              <Home
-                step={wizardStep}
-                setStep={setWizardStep}
-                state={wizardState}
-                setState={setWizardState}
-                onSelectTaskType={setTaskType}
-                onResetTaskType={resetWizard}
-              />
-            </Route>
-            <Route path="/history" component={History} />
-            <Route component={NotFound} />
-          </Switch>
-        </WouterRouter>
-        <Toaster />
+        <NavHighlightContext.Provider
+          value={{
+            highlightMyModels,
+            clearHighlight: () => setHighlightMyModels(false),
+          }}
+        >
+          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+            <Switch>
+              <Route path="/">
+                <Home
+                  step={wizardStep}
+                  setStep={setWizardStep}
+                  state={wizardState}
+                  setState={setWizardState}
+                  onSelectTaskType={setTaskType}
+                  onResetTaskType={resetWizard}
+                  onTrainingStarted={triggerHighlight}
+                />
+              </Route>
+              <Route path="/my-models" component={MyModels} />
+              <Route path="/history" component={History} />
+              <Route component={NotFound} />
+            </Switch>
+          </WouterRouter>
+          <Toaster />
+        </NavHighlightContext.Provider>
       </TooltipProvider>
     </QueryClientProvider>
   );

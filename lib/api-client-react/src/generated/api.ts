@@ -24,6 +24,7 @@ import type {
   JobLogsResponse,
   JobStats,
   ModelInfo,
+  RenameTrainedModelBody,
   TrainingJob,
 } from "./api.schemas";
 
@@ -588,6 +589,253 @@ export function useGetJobLogs<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * Returns all completed jobs with their metadata for the model library
+ * @summary List all completed trained models
+ */
+export const getListTrainedModelsUrl = () => {
+  return `/api/trained-models`;
+};
+
+export const listTrainedModels = async (
+  options?: RequestInit,
+): Promise<TrainingJob[]> => {
+  return customFetch<TrainingJob[]>(getListTrainedModelsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListTrainedModelsQueryKey = () => {
+  return [`/api/trained-models`] as const;
+};
+
+export const getListTrainedModelsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listTrainedModels>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listTrainedModels>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListTrainedModelsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listTrainedModels>>
+  > = ({ signal }) => listTrainedModels({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listTrainedModels>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListTrainedModelsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listTrainedModels>>
+>;
+export type ListTrainedModelsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all completed trained models
+ */
+
+export function useListTrainedModels<
+  TData = Awaited<ReturnType<typeof listTrainedModels>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listTrainedModels>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListTrainedModelsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Update the nickname of a trained model
+ */
+export const getRenameTrainedModelUrl = (jobId: string) => {
+  return `/api/trained-models/${jobId}`;
+};
+
+export const renameTrainedModel = async (
+  jobId: string,
+  renameTrainedModelBody: RenameTrainedModelBody,
+  options?: RequestInit,
+): Promise<TrainingJob> => {
+  return customFetch<TrainingJob>(getRenameTrainedModelUrl(jobId), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(renameTrainedModelBody),
+  });
+};
+
+export const getRenameTrainedModelMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof renameTrainedModel>>,
+    TError,
+    { jobId: string; data: BodyType<RenameTrainedModelBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof renameTrainedModel>>,
+  TError,
+  { jobId: string; data: BodyType<RenameTrainedModelBody> },
+  TContext
+> => {
+  const mutationKey = ["renameTrainedModel"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof renameTrainedModel>>,
+    { jobId: string; data: BodyType<RenameTrainedModelBody> }
+  > = (props) => {
+    const { jobId, data } = props ?? {};
+
+    return renameTrainedModel(jobId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RenameTrainedModelMutationResult = NonNullable<
+  Awaited<ReturnType<typeof renameTrainedModel>>
+>;
+export type RenameTrainedModelMutationBody = BodyType<RenameTrainedModelBody>;
+export type RenameTrainedModelMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Update the nickname of a trained model
+ */
+export const useRenameTrainedModel = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof renameTrainedModel>>,
+    TError,
+    { jobId: string; data: BodyType<RenameTrainedModelBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof renameTrainedModel>>,
+  TError,
+  { jobId: string; data: BodyType<RenameTrainedModelBody> },
+  TContext
+> => {
+  return useMutation(getRenameTrainedModelMutationOptions(options));
+};
+
+/**
+ * @summary Delete a trained model and its files
+ */
+export const getDeleteTrainedModelUrl = (jobId: string) => {
+  return `/api/trained-models/${jobId}`;
+};
+
+export const deleteTrainedModel = async (
+  jobId: string,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteTrainedModelUrl(jobId), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteTrainedModelMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteTrainedModel>>,
+    TError,
+    { jobId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteTrainedModel>>,
+  TError,
+  { jobId: string },
+  TContext
+> => {
+  const mutationKey = ["deleteTrainedModel"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteTrainedModel>>,
+    { jobId: string }
+  > = (props) => {
+    const { jobId } = props ?? {};
+
+    return deleteTrainedModel(jobId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteTrainedModelMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteTrainedModel>>
+>;
+
+export type DeleteTrainedModelMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Delete a trained model and its files
+ */
+export const useDeleteTrainedModel = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteTrainedModel>>,
+    TError,
+    { jobId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteTrainedModel>>,
+  TError,
+  { jobId: string },
+  TContext
+> => {
+  return useMutation(getDeleteTrainedModelMutationOptions(options));
+};
 
 /**
  * Returns summary counts and averages useful for dashboard display

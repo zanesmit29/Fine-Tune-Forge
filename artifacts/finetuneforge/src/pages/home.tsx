@@ -17,6 +17,7 @@ export interface WizardState {
   taskType: TaskTypeId | null;
   modelId: string;
   datasetPreview: DatasetPreview | null;
+  datasetName: string | null;
   textColumn: string;
   labelColumn: string;
   epochs: number;
@@ -53,9 +54,10 @@ interface HomeProps {
   setState: React.Dispatch<React.SetStateAction<WizardState>>;
   onSelectTaskType: (id: TaskTypeId) => void;
   onResetTaskType: () => void;
+  onTrainingStarted?: () => void;
 }
 
-export default function Home({ step, setStep, state, setState, onSelectTaskType, onResetTaskType }: HomeProps) {
+export default function Home({ step, setStep, state, setState, onSelectTaskType, onResetTaskType, onTrainingStarted }: HomeProps) {
   const createJob = useCreateJob();
   const [, setLocation] = useLocation();
 
@@ -74,7 +76,9 @@ export default function Home({ step, setStep, state, setState, onSelectTaskType,
       {
         data: {
           modelId: state.modelId,
+          taskType: state.taskType,
           datasetId: state.datasetPreview.datasetId,
+          datasetName: state.datasetName ?? null,
           textColumn: state.textColumn,
           labelColumn: state.labelColumn,
           epochs: state.epochs,
@@ -87,6 +91,7 @@ export default function Home({ step, setStep, state, setState, onSelectTaskType,
         onSuccess: (job) => {
           setState((prev) => ({ ...prev, jobId: job.id }));
           setStep(4);
+          onTrainingStarted?.();
         },
       }
     );

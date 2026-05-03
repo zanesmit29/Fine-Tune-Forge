@@ -62,7 +62,11 @@ export const CreateJobBodyComputeMode = {
 
 export interface CreateJobBody {
   modelId: string;
+  /** @nullable */
+  taskType?: string | null;
   datasetId: string;
+  /** @nullable */
+  datasetName?: string | null;
   textColumn: string;
   labelColumn: string;
   /**
@@ -97,7 +101,13 @@ export interface TrainingJob {
   id: string;
   modelId: string;
   modelName: string;
+  /** @nullable */
+  nickname?: string | null;
+  /** @nullable */
+  taskType?: string | null;
   datasetId: string;
+  /** @nullable */
+  datasetName?: string | null;
   textColumn: string;
   labelColumn: string;
   epochs: number;
@@ -148,6 +158,14 @@ export interface JobStats {
   failed: number;
   /** @nullable */
   avgTrainLoss: number | null;
+}
+
+export interface RenameTrainedModelBody {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  nickname: string;
 }
 
 export interface ErrorResponse {
