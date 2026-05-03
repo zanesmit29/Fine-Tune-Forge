@@ -546,48 +546,6 @@ function ExportFormats() {
   );
 }
 
-function SocialProof() {
-  return (
-    <section className="bg-[#F8FAFC] border-y border-[#E2E8F0]">
-      <div className="max-w-[1200px] mx-auto px-6 py-20">
-        <Reveal>
-          <h2 className="text-center text-3xl sm:text-4xl font-bold text-[#0F172A] tracking-tight">
-            Trusted by teams who build with AI
-          </h2>
-        </Reveal>
-        <Reveal delay={120}>
-          <div className="mt-10 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div
-                key={i}
-                className="h-14 bg-white border border-[#E2E8F0] rounded-md flex items-center justify-center"
-              >
-                <span className="text-sm text-[#94A3B8]">Company</span>
-              </div>
-            ))}
-          </div>
-        </Reveal>
-        <Reveal delay={200}>
-          <blockquote
-            className="mt-12 max-w-3xl mx-auto text-lg italic text-[#0F172A]"
-            style={{
-              borderLeft: "3px solid #2563EB",
-              paddingLeft: "1.5rem",
-            }}
-          >
-            “We fine-tuned a support classifier in 20 minutes and deployed it
-            the same day. The exported code meant we could integrate it into
-            our pipeline immediately.”
-            <footer className="mt-3 not-italic text-sm text-[#64748B]">
-              — “Head of Engineering, B2B SaaS company” (example testimonial)
-            </footer>
-          </blockquote>
-        </Reveal>
-      </div>
-    </section>
-  );
-}
-
 function FinalCTA() {
   return (
     <section style={{ backgroundColor: "#EFF6FF" }}>
@@ -661,7 +619,6 @@ export default function Landing() {
         <Why />
         <TaskTypes />
         <ExportFormats />
-        <SocialProof />
         <FinalCTA />
       </main>
       <Footer />
