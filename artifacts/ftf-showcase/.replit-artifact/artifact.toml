@@ -1,0 +1,31 @@
+kind = "slides"
+previewPath = "/ftf-showcase/"
+title = "FineTuneForge Walkthrough"
+version = "1.0.0"
+id = "artifacts/ftf-showcase"
+router = "path"
+
+[[integratedSkills]]
+name = "slides"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/ftf-showcase/" ]
+localPort = 25022
+
+[services.development]
+run = "pnpm --filter @workspace/ftf-showcase run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/ftf-showcase", "run", "build" ]
+publicDir = "artifacts/ftf-showcase/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25022"
+BASE_PATH = "/ftf-showcase/"

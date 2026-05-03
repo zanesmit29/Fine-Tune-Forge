@@ -1,0 +1,90 @@
+[
+  {
+    "id": "9f0c6f2d-faa2-4fa9-86e4-71fc14e46421",
+    "position": 1,
+    "filepath": "src/pages/slides/Title.tsx",
+    "title": "Fine-tune AI on your data",
+    "description": "Title slide and pitch line",
+    "speakerNotes": ""
+  },
+  {
+    "id": "1eb3077b-f6ab-49d9-8590-9ecb83377343",
+    "position": 2,
+    "filepath": "src/pages/slides/Pitch.tsx",
+    "title": "Built for teams that want to own their model",
+    "description": "Landing page and value props",
+    "speakerNotes": ""
+  },
+  {
+    "id": "8b1e526e-0f30-4268-b052-8dc7745f601e",
+    "position": 3,
+    "filepath": "src/pages/slides/Step1Task.tsx",
+    "title": "Step 1 — Choose your task",
+    "description": "Wizard step 0: task selection",
+    "speakerNotes": ""
+  },
+  {
+    "id": "00ec7d98-fe5f-49af-b825-bc79f14cdf1b",
+    "position": 4,
+    "filepath": "src/pages/slides/Step2Model.tsx",
+    "title": "Step 2 — Pick a base model",
+    "description": "Wizard step 1: model selection",
+    "speakerNotes": ""
+  },
+  {
+    "id": "ab9da52a-c818-4b9b-96ea-9b6a39e78347",
+    "position": 5,
+    "filepath": "src/pages/slides/Step3Data.tsx",
+    "title": "Step 3 — Bring your data",
+    "description": "Wizard step 2: dataset upload and templates",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a7f5fd15-1e97-4f3f-b08e-37b7ceaa46d2",
+    "position": 6,
+    "filepath": "src/pages/slides/Step4Config.tsx",
+    "title": "Step 4 — Tune the dials",
+    "description": "Wizard step 3: hyperparameters and compute",
+    "speakerNotes": ""
+  },
+  {
+    "id": "7be0fdea-9945-4944-ba50-d3b71049622e",
+    "position": 7,
+    "filepath": "src/pages/slides/Step5Train.tsx",
+    "title": "Step 5 — Train and own it",
+    "description": "Wizard step 4: training results and exports",
+    "speakerNotes": ""
+  },
+  {
+    "id": "452f1ac0-a0c0-4143-9695-59ffab1f5d42",
+    "position": 8,
+    "filepath": "src/pages/slides/Models.tsx",
+    "title": "Every trained model, in one place",
+    "description": "My Models page",
+    "speakerNotes": ""
+  },
+  {
+    "id": "3d626148-63b7-4e2b-8337-5d525e8ca6c1",
+    "position": 9,
+    "filepath": "src/pages/slides/History.tsx",
+    "title": "Every run, accounted for",
+    "description": "Training History page",
+    "speakerNotes": ""
+  },
+  {
+    "id": "c3eb61c6-c68c-4340-a7cf-330c8409b0df",
+    "position": 10,
+    "filepath": "src/pages/slides/Integrations.tsx",
+    "title": "Bring your own GPU",
+    "description": "Modal and Hugging Face integrations",
+    "speakerNotes": ""
+  },
+  {
+    "id": "4f960bb1-4d24-4421-ab47-0fe08234b028",
+    "position": 11,
+    "filepath": "src/pages/slides/Closing.tsx",
+    "title": "Own your model completely",
+    "description": "Closing slide",
+    "speakerNotes": ""
+  }
+]
