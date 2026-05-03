@@ -8,6 +8,7 @@ import Home from "@/pages/home";
 import History from "@/pages/history";
 import MyModels from "@/pages/my-models";
 import Integrations from "@/pages/integrations";
+import GetStarted from "@/pages/get-started";
 import Settings from "@/pages/settings";
 import { NavHighlightContext } from "@/lib/nav-highlight";
 import type { WizardState } from "@/pages/home";
@@ -75,6 +76,7 @@ function App() {
               </Route>
               <Route path="/my-models" component={MyModels} />
               <Route path="/history" component={History} />
+              <Route path="/get-started" component={GetStarted} />
               <Route path="/integrations" component={Integrations} />
               <Route path="/settings" component={Settings} />
               <Route component={NotFound} />
