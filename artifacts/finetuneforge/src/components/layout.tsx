@@ -21,7 +21,7 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { href: "/", label: "New Fine-Tune", icon: Sparkles },
+  { href: "/app", label: "New Fine-Tune", icon: Sparkles },
   { href: "/my-models", label: "My Models", icon: Database },
   { href: "/get-started", label: "Get Started", icon: BookOpen },
   { href: "/integrations", label: "Integrations", icon: Plug },

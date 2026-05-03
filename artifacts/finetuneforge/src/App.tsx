@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
+import Landing from "@/pages/landing";
 import History from "@/pages/history";
 import MyModels from "@/pages/my-models";
 import Integrations from "@/pages/integrations";
@@ -63,7 +64,8 @@ function App() {
         >
           <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
             <Switch>
-              <Route path="/">
+              <Route path="/" component={Landing} />
+              <Route path="/app">
                 <Home
                   step={wizardStep}
                   setStep={setWizardStep}

@@ -373,7 +373,7 @@ export default function MyModels() {
               </p>
             </div>
             <Button
-              onClick={() => setLocation("/")}
+              onClick={() => setLocation("/app")}
               className="gap-2"
               data-testid="button-start-first-finetune"
             >
