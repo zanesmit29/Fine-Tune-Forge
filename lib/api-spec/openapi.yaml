@@ -321,6 +321,9 @@ components:
         loraRank:
           type: integer
           enum: [4, 8, 16]
+        maxSeqLength:
+          type: ["integer", "null"]
+          enum: [128, 256, 512, null]
         computeMode:
           type: string
           enum: [cpu, gpu]
@@ -353,6 +356,8 @@ components:
           type: number
         loraRank:
           type: integer
+        maxSeqLength:
+          type: ["integer", "null"]
         computeMode:
           type: string
           enum: [cpu, gpu]
@@ -374,6 +379,20 @@ components:
           type: ["number", "null"]
         accuracy:
           type: ["number", "null"]
+        perplexity:
+          type: ["number", "null"]
+          description: Final perplexity (causal LM tasks like instruction tuning)
+        epochLosses:
+          type: array
+          items:
+            type: number
+          description: Per-epoch training loss values for plotting the loss curve
+        sampleInstruction:
+          type: ["string", "null"]
+          description: A representative instruction from the dataset used for sample inference
+        sampleResponse:
+          type: ["string", "null"]
+          description: The fine-tuned model's generated response to sampleInstruction
         errorMessage:
           type: ["string", "null"]
         pklPath:

@@ -1,7 +1,7 @@
 import { Layout } from "@/components/layout";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check } from "lucide-react";
+import { Check, Sparkles } from "lucide-react";
 import { TASK_TYPES, type TaskTypeId } from "@/lib/task-types";
 
 export function TaskSelector({
@@ -52,6 +52,16 @@ export function TaskSelector({
                       className="bg-[#F1F5F9] text-[#64748B] border-0 text-[10px] uppercase tracking-wide font-medium"
                     >
                       Coming Soon
+                    </Badge>
+                  </div>
+                )}
+                {!disabled && task.id === "instruction" && (
+                  <div className="absolute top-3 right-3">
+                    <Badge
+                      className="bg-green-100 text-green-800 border-0 gap-1 text-[10px] uppercase tracking-wide font-semibold"
+                      data-testid="badge-lm-studio-ready"
+                    >
+                      <Sparkles className="w-3 h-3" /> LM Studio ready
                     </Badge>
                   </div>
                 )}

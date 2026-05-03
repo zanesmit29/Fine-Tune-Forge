@@ -61,6 +61,7 @@ export const ListJobsResponseItem = zod.object({
   epochs: zod.number(),
   learningRate: zod.number(),
   loraRank: zod.number(),
+  maxSeqLength: zod.number().nullish(),
   computeMode: zod.enum(["cpu", "gpu"]),
   status: zod.enum(["queued", "running", "completed", "failed"]),
   createdAt: zod.coerce.date(),
@@ -69,6 +70,24 @@ export const ListJobsResponseItem = zod.object({
   trainLoss: zod.number().nullish(),
   evalLoss: zod.number().nullish(),
   accuracy: zod.number().nullish(),
+  perplexity: zod
+    .number()
+    .nullish()
+    .describe("Final perplexity (causal LM tasks like instruction tuning)"),
+  epochLosses: zod
+    .array(zod.number())
+    .optional()
+    .describe("Per-epoch training loss values for plotting the loss curve"),
+  sampleInstruction: zod
+    .string()
+    .nullish()
+    .describe(
+      "A representative instruction from the dataset used for sample inference",
+    ),
+  sampleResponse: zod
+    .string()
+    .nullish()
+    .describe("The fine-tuned model's generated response to sampleInstruction"),
   errorMessage: zod.string().nullish(),
   pklPath: zod
     .string()
@@ -107,6 +126,14 @@ export const CreateJobBody = zod.object({
   epochs: zod.number().min(1).max(createJobBodyEpochsMax),
   learningRate: zod.number(),
   loraRank: zod.union([zod.literal(4), zod.literal(8), zod.literal(16)]),
+  maxSeqLength: zod
+    .union([
+      zod.literal(128),
+      zod.literal(256),
+      zod.literal(512),
+      zod.literal(null),
+    ])
+    .nullish(),
   computeMode: zod.enum(["cpu", "gpu"]),
 });
 
@@ -131,6 +158,7 @@ export const GetJobResponse = zod.object({
   epochs: zod.number(),
   learningRate: zod.number(),
   loraRank: zod.number(),
+  maxSeqLength: zod.number().nullish(),
   computeMode: zod.enum(["cpu", "gpu"]),
   status: zod.enum(["queued", "running", "completed", "failed"]),
   createdAt: zod.coerce.date(),
@@ -139,6 +167,24 @@ export const GetJobResponse = zod.object({
   trainLoss: zod.number().nullish(),
   evalLoss: zod.number().nullish(),
   accuracy: zod.number().nullish(),
+  perplexity: zod
+    .number()
+    .nullish()
+    .describe("Final perplexity (causal LM tasks like instruction tuning)"),
+  epochLosses: zod
+    .array(zod.number())
+    .optional()
+    .describe("Per-epoch training loss values for plotting the loss curve"),
+  sampleInstruction: zod
+    .string()
+    .nullish()
+    .describe(
+      "A representative instruction from the dataset used for sample inference",
+    ),
+  sampleResponse: zod
+    .string()
+    .nullish()
+    .describe("The fine-tuned model's generated response to sampleInstruction"),
   errorMessage: zod.string().nullish(),
   pklPath: zod
     .string()
@@ -191,6 +237,7 @@ export const ListTrainedModelsResponseItem = zod.object({
   epochs: zod.number(),
   learningRate: zod.number(),
   loraRank: zod.number(),
+  maxSeqLength: zod.number().nullish(),
   computeMode: zod.enum(["cpu", "gpu"]),
   status: zod.enum(["queued", "running", "completed", "failed"]),
   createdAt: zod.coerce.date(),
@@ -199,6 +246,24 @@ export const ListTrainedModelsResponseItem = zod.object({
   trainLoss: zod.number().nullish(),
   evalLoss: zod.number().nullish(),
   accuracy: zod.number().nullish(),
+  perplexity: zod
+    .number()
+    .nullish()
+    .describe("Final perplexity (causal LM tasks like instruction tuning)"),
+  epochLosses: zod
+    .array(zod.number())
+    .optional()
+    .describe("Per-epoch training loss values for plotting the loss curve"),
+  sampleInstruction: zod
+    .string()
+    .nullish()
+    .describe(
+      "A representative instruction from the dataset used for sample inference",
+    ),
+  sampleResponse: zod
+    .string()
+    .nullish()
+    .describe("The fine-tuned model's generated response to sampleInstruction"),
   errorMessage: zod.string().nullish(),
   pklPath: zod
     .string()
@@ -249,6 +314,7 @@ export const RenameTrainedModelResponse = zod.object({
   epochs: zod.number(),
   learningRate: zod.number(),
   loraRank: zod.number(),
+  maxSeqLength: zod.number().nullish(),
   computeMode: zod.enum(["cpu", "gpu"]),
   status: zod.enum(["queued", "running", "completed", "failed"]),
   createdAt: zod.coerce.date(),
@@ -257,6 +323,24 @@ export const RenameTrainedModelResponse = zod.object({
   trainLoss: zod.number().nullish(),
   evalLoss: zod.number().nullish(),
   accuracy: zod.number().nullish(),
+  perplexity: zod
+    .number()
+    .nullish()
+    .describe("Final perplexity (causal LM tasks like instruction tuning)"),
+  epochLosses: zod
+    .array(zod.number())
+    .optional()
+    .describe("Per-epoch training loss values for plotting the loss curve"),
+  sampleInstruction: zod
+    .string()
+    .nullish()
+    .describe(
+      "A representative instruction from the dataset used for sample inference",
+    ),
+  sampleResponse: zod
+    .string()
+    .nullish()
+    .describe("The fine-tuned model's generated response to sampleInstruction"),
   errorMessage: zod.string().nullish(),
   pklPath: zod
     .string()

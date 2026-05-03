@@ -26,6 +26,7 @@ const defaultWizardState: WizardState = {
   epochs: 3,
   learningRate: 0.0002,
   loraRank: 8 as CreateJobBodyLoraRank,
+  maxSeqLength: 256,
   computeMode: "cpu",
   jobId: null,
 };

@@ -132,13 +132,37 @@ export const TASK_TYPES: TaskTypeDef[] = [
   {
     id: "instruction",
     name: "Instruction Tuning",
-    description: "Teach a model to follow custom instructions and formats.",
-    example: "Assistants, structured output, agents",
+    description:
+      "Fine-tune a generative model on your own Q&A or instruction data. Export to GGUF and run locally in LM Studio.",
+    example: "Assistants, internal Q&A bots, on-device chat",
     icon: Wand2,
-    available: false,
-    recommendedModelIdsCpu: [],
-    recommendedModelIdsGpu: [],
-    templates: [],
+    available: true,
+    recommendedModelIdsCpu: ["gpt2", "Qwen/Qwen2.5-0.5B"],
+    recommendedModelIdsGpu: ["Qwen/Qwen2.5-1.5B", "Qwen/Qwen2.5-3B"],
+    templates: [
+      {
+        id: "company_faq",
+        filename: "company_faq.csv",
+        name: "Company FAQ",
+        description:
+          "50 realistic company FAQ instruction/response pairs (support, billing, security).",
+        textColumn: "instruction",
+        labelColumn: "response",
+        classes: [],
+        rowCount: 50,
+      },
+      {
+        id: "product_assistant",
+        filename: "product_assistant.csv",
+        name: "Product Assistant",
+        description:
+          "50 product Q&A pairs covering features, integrations, and account management.",
+        textColumn: "instruction",
+        labelColumn: "response",
+        classes: [],
+        rowCount: 50,
+      },
+    ],
   },
 ];
 

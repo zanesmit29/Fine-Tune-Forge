@@ -8,7 +8,16 @@ import {
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Download, Code, CheckCircle2, XCircle, Cpu, Zap } from "lucide-react";
+import { Loader2, Download, Code, CheckCircle2, XCircle, Cpu, Zap, Sparkles, MessageSquareCode, Copy } from "lucide-react";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+} from "recharts";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { type TaskTypeId } from "@/lib/task-types";
@@ -150,6 +159,170 @@ function TaskResultsPanel({
         <p className="text-[10px] text-muted-foreground mt-3 italic">
           Estimated from final accuracy and class distribution.
         </p>
+      </Card>
+    </div>
+  );
+}
+
+function InstructionResultsPanel({
+  job,
+}: {
+  job: {
+    epochLosses?: number[] | null;
+    sampleInstruction?: string | null;
+    sampleResponse?: string | null;
+    ggufPath?: string | null;
+    nickname?: string | null;
+    modelName?: string | null;
+  };
+}) {
+  const losses = job.epochLosses ?? [];
+  const data = losses.map((loss, i) => ({ epoch: i + 1, loss: Number(loss.toFixed(4)) }));
+  const modelLabel = (job.nickname ?? job.modelName ?? "your-model")
+    .toString()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40) || "your-model";
+  const sampleInstruction = job.sampleInstruction;
+  const sampleResponse = job.sampleResponse;
+
+  const copy = (text: string) => {
+    void navigator.clipboard.writeText(text).catch(() => {});
+  };
+
+  return (
+    <div className="grid gap-4 md:grid-cols-2">
+      <Card className="p-5 md:col-span-2">
+        <div className="flex items-start gap-3 mb-1">
+          <div className="w-9 h-9 rounded-md bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
+            <Sparkles className="w-5 h-5" />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-semibold text-base text-blue-900 dark:text-blue-200">
+              Run your fine-tuned model in LM Studio
+            </h3>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Your GGUF export is optimized for fast local inference on a laptop or workstation.
+            </p>
+          </div>
+        </div>
+        <ol className="mt-3 space-y-2 text-sm">
+          {[
+            <>Download <code className="font-mono text-xs px-1 py-0.5 rounded bg-muted">model.gguf</code> using the button below.</>,
+            <>Open <strong>LM Studio</strong> and click <em>My Models</em> → <em>Add a model file</em>.</>,
+            <>Drop the GGUF into the LM Studio models folder (or pick it from your downloads).</>,
+            <>Load the model and chat using the same instruction format used during training.</>,
+          ].map((step, i) => (
+            <li key={i} className="flex gap-3">
+              <span className="shrink-0 w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-semibold inline-flex items-center justify-center">
+                {i + 1}
+              </span>
+              <span className="leading-6">{step}</span>
+            </li>
+          ))}
+        </ol>
+        <div className="mt-4 rounded-md bg-slate-900 text-slate-100 px-3 py-2 font-mono text-xs flex items-center justify-between gap-3">
+          <span className="truncate">
+            ### Instruction:\n{"{your prompt}"}\n\n### Response:\n
+          </span>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 text-slate-300 hover:text-white hover:bg-slate-800 gap-1.5 shrink-0"
+            onClick={() =>
+              copy("### Instruction:\n{your prompt}\n\n### Response:\n")
+            }
+            data-testid="button-copy-prompt"
+          >
+            <Copy className="w-3.5 h-3.5" /> Copy prompt
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground mt-2">
+          Suggested filename: <code className="font-mono">{modelLabel}.gguf</code>
+          {!job.ggufPath && (
+            <span className="ml-2 text-amber-700">
+              (GGUF was not produced for this run — try a Qwen2.5 model for guaranteed GGUF support)
+            </span>
+          )}
+        </p>
+      </Card>
+
+      <Card className="p-5">
+        <h3 className="font-semibold text-sm mb-1">Training Loss Curve</h3>
+        <p className="text-xs text-muted-foreground mb-3">
+          Lower is better. A smooth, falling curve means the model is learning.
+        </p>
+        {data.length === 0 ? (
+          <div className="h-[180px] flex items-center justify-center text-xs text-muted-foreground italic">
+            No per-epoch loss recorded.
+          </div>
+        ) : (
+          <div className="h-[200px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={data} margin={{ top: 8, right: 8, bottom: 8, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis
+                  dataKey="epoch"
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={11}
+                  label={{ value: "Epoch", position: "insideBottom", offset: -4, fontSize: 11 }}
+                />
+                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} width={42} />
+                <RechartsTooltip
+                  contentStyle={{
+                    fontSize: 12,
+                    background: "hsl(var(--popover))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: 6,
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="loss"
+                  stroke="#2563EB"
+                  strokeWidth={2}
+                  dot={{ r: 3, fill: "#2563EB" }}
+                  activeDot={{ r: 5 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </Card>
+
+      <Card className="p-5">
+        <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+          <MessageSquareCode className="w-4 h-4" /> Sample Inference
+        </h3>
+        {sampleInstruction ? (
+          <div className="space-y-3 text-sm">
+            <div>
+              <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1">
+                Instruction
+              </div>
+              <div className="rounded-md border bg-muted/30 px-3 py-2 leading-6">
+                {sampleInstruction}
+              </div>
+            </div>
+            <div>
+              <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1">
+                Model response
+              </div>
+              <div className="rounded-md border border-blue-200 bg-blue-50 dark:bg-blue-950/30 dark:border-blue-900/50 px-3 py-2 leading-6 whitespace-pre-wrap">
+                {sampleResponse?.trim() || (
+                  <span className="text-muted-foreground italic">
+                    (no response generated)
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="text-xs text-muted-foreground italic">
+            No sample inference recorded for this run.
+          </div>
+        )}
       </Card>
     </div>
   );
@@ -308,15 +481,27 @@ export function StepTrain({
             <span className="text-2xl font-mono font-bold">{job.evalLoss?.toFixed(4) || "-"}</span>
           </Card>
           <Card className="p-4 flex flex-col items-center justify-center text-center">
-            <span className="text-sm text-muted-foreground mb-1">Accuracy</span>
-            <span className="text-2xl font-mono font-bold text-primary">
-              {job.accuracy ? `${(job.accuracy * 100).toFixed(2)}%` : "-"}
+            <span className="text-sm text-muted-foreground mb-1">
+              {taskType === "instruction" ? "Perplexity" : "Accuracy"}
+            </span>
+            <span className="text-2xl font-mono font-bold text-primary" data-testid="metric-headline">
+              {taskType === "instruction"
+                ? job.perplexity != null
+                  ? job.perplexity.toFixed(2)
+                  : "-"
+                : job.accuracy != null
+                  ? `${(job.accuracy * 100).toFixed(2)}%`
+                  : "-"}
             </span>
           </Card>
         </div>
       )}
 
-      {isCompleted && (
+      {isCompleted && taskType === "instruction" && job && (
+        <InstructionResultsPanel job={job} />
+      )}
+
+      {isCompleted && taskType !== "instruction" && (
         <TaskResultsPanel
           taskType={taskType}
           accuracy={job?.accuracy}
@@ -404,25 +589,51 @@ export function StepTrain({
             </DialogContent>
           </Dialog>
 
-          <ExportButton
-            jobId={jobId}
-            format="pkl"
-            available={!!job?.pklPath}
-            tooltip="For Python & scikit-learn pipelines"
-            primary
-          />
-          <ExportButton
-            jobId={jobId}
-            format="onnx"
-            available={!!job?.onnxPath}
-            tooltip="For cross-platform inference (ONNX Runtime)"
-          />
-          <ExportButton
-            jobId={jobId}
-            format="gguf"
-            available={!!job?.ggufPath}
-            tooltip="For Ollama & LM Studio"
-          />
+          {taskType === "instruction" ? (
+            <>
+              <ExportButton
+                jobId={jobId}
+                format="gguf"
+                available={!!job?.ggufPath}
+                tooltip="Drop into LM Studio for local inference"
+                primary
+              />
+              <ExportButton
+                jobId={jobId}
+                format="pkl"
+                available={!!job?.pklPath}
+                tooltip="For Python & PEFT pipelines"
+              />
+              <ExportButton
+                jobId={jobId}
+                format="onnx"
+                available={!!job?.onnxPath}
+                tooltip="For cross-platform inference (ONNX Runtime)"
+              />
+            </>
+          ) : (
+            <>
+              <ExportButton
+                jobId={jobId}
+                format="pkl"
+                available={!!job?.pklPath}
+                tooltip="For Python & scikit-learn pipelines"
+                primary
+              />
+              <ExportButton
+                jobId={jobId}
+                format="onnx"
+                available={!!job?.onnxPath}
+                tooltip="For cross-platform inference (ONNX Runtime)"
+              />
+              <ExportButton
+                jobId={jobId}
+                format="gguf"
+                available={!!job?.ggufPath}
+                tooltip="For Ollama & LM Studio"
+              />
+            </>
+          )}
         </div>
       )}
     </div>

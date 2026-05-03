@@ -48,6 +48,16 @@ function detectExportPaths(jobId: string): {
   };
 }
 
+function parseEpochLosses(raw: string | null): number[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((n) => typeof n === "number") : [];
+  } catch {
+    return [];
+  }
+}
+
 export function formatJob(row: typeof trainingJobsTable.$inferSelect) {
   return {
     id: row.id,
@@ -62,6 +72,7 @@ export function formatJob(row: typeof trainingJobsTable.$inferSelect) {
     epochs: row.epochs,
     learningRate: row.learningRate,
     loraRank: row.loraRank,
+    maxSeqLength: row.maxSeqLength ?? null,
     computeMode: (row.computeMode ?? "cpu") as "cpu" | "gpu",
     status: row.status as "queued" | "running" | "completed" | "failed",
     createdAt: row.createdAt.toISOString(),
@@ -70,6 +81,10 @@ export function formatJob(row: typeof trainingJobsTable.$inferSelect) {
     trainLoss: row.trainLoss ?? null,
     evalLoss: row.evalLoss ?? null,
     accuracy: row.accuracy ?? null,
+    perplexity: row.perplexity ?? null,
+    epochLosses: parseEpochLosses(row.epochLosses),
+    sampleInstruction: row.sampleInstruction ?? null,
+    sampleResponse: row.sampleResponse ?? null,
     errorMessage: row.errorMessage ?? null,
     pklPath: row.pklPath ?? null,
     onnxPath: row.onnxPath ?? null,
@@ -118,6 +133,8 @@ async function runTraining(jobId: string, body: typeof CreateJobBody._type) {
     "--lr", String(body.learningRate),
     "--lora-rank", String(body.loraRank),
     "--output-dir", outputDir,
+    "--task-type", body.taskType ?? "classification",
+    "--max-seq-length", String(body.maxSeqLength ?? 256),
   ];
 
   await appendLog(jobId, `[FineTuneForge] Starting training job ${jobId}`);
@@ -165,6 +182,10 @@ async function runTraining(jobId: string, body: typeof CreateJobBody._type) {
       let trainLoss: number | null = null;
       let evalLoss: number | null = null;
       let accuracy: number | null = null;
+      let perplexity: number | null = null;
+      let epochLosses: number[] = [];
+      let sampleInstruction: string | null = null;
+      let sampleResponse: string | null = null;
 
       if (fs.existsSync(resultsFile)) {
         try {
@@ -172,6 +193,10 @@ async function runTraining(jobId: string, body: typeof CreateJobBody._type) {
           trainLoss = metrics.train_loss ?? null;
           evalLoss = metrics.eval_loss ?? null;
           accuracy = metrics.accuracy ?? null;
+          perplexity = metrics.perplexity ?? null;
+          epochLosses = Array.isArray(metrics.epoch_losses) ? metrics.epoch_losses : [];
+          sampleInstruction = metrics.sample_instruction ?? null;
+          sampleResponse = metrics.sample_response ?? null;
         } catch {
           logger.warn({ jobId }, "Failed to read metrics file");
         }
@@ -195,6 +220,10 @@ async function runTraining(jobId: string, body: typeof CreateJobBody._type) {
           trainLoss,
           evalLoss,
           accuracy,
+          perplexity,
+          epochLosses: JSON.stringify(epochLosses),
+          sampleInstruction,
+          sampleResponse,
           pklPath,
           onnxPath,
           ggufPath,
@@ -270,8 +299,13 @@ router.post("/jobs", async (req, res): Promise<void> => {
 
   const MODEL_COMPUTE_MODES: Record<string, ReadonlyArray<"cpu" | "gpu">> = {
     "distilbert-base-uncased": ["cpu", "gpu"],
+    "prajjwal1/bert-tiny": ["cpu", "gpu"],
+    "microsoft/deberta-v3-base": ["gpu"],
+    "roberta-base": ["gpu"],
     "gpt2": ["cpu", "gpu"],
     "Qwen/Qwen2.5-0.5B": ["cpu", "gpu"],
+    "Qwen/Qwen2.5-1.5B": ["gpu"],
+    "Qwen/Qwen2.5-3B": ["gpu"],
     "distilgpt2": ["cpu", "gpu"],
     "mistralai/Mistral-7B-v0.1": ["gpu"],
     "meta-llama/Llama-3.2-3B": ["gpu"],
@@ -296,8 +330,13 @@ router.post("/jobs", async (req, res): Promise<void> => {
 
   const MODEL_NAMES: Record<string, string> = {
     "distilbert-base-uncased": "DistilBERT",
+    "prajjwal1/bert-tiny": "BERT-Tiny",
+    "microsoft/deberta-v3-base": "DeBERTa-v3-base",
+    "roberta-base": "RoBERTa-base",
     "gpt2": "GPT-2 Small",
     "Qwen/Qwen2.5-0.5B": "Qwen2.5-0.5B",
+    "Qwen/Qwen2.5-1.5B": "Qwen2.5-1.5B + LoRA",
+    "Qwen/Qwen2.5-3B": "Qwen2.5-3B + LoRA",
     "distilgpt2": "DistilGPT-2",
     "mistralai/Mistral-7B-v0.1": "Mistral-7B + LoRA",
     "meta-llama/Llama-3.2-3B": "Llama-3.2-3B + LoRA",
@@ -318,6 +357,7 @@ router.post("/jobs", async (req, res): Promise<void> => {
       epochs: body.epochs,
       learningRate: body.learningRate,
       loraRank: body.loraRank,
+      maxSeqLength: body.maxSeqLength ?? null,
       computeMode: body.computeMode,
       status: "queued",
       logLines: "[]",

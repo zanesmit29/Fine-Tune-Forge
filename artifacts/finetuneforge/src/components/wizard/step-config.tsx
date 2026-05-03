@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Cpu, Zap, Info } from "lucide-react";
+import { Loader2, Cpu, Zap, Info, MessageSquareCode } from "lucide-react";
 import { CreateJobBodyLoraRank, useListModels } from "@workspace/api-client-react";
 
 export function StepConfig({
@@ -22,6 +22,9 @@ export function StepConfig({
   isPending: boolean;
 }) {
   const { data: models } = useListModels();
+  const isInstruction = state.taskType === "instruction";
+  const seqLengths = [128, 256, 512] as const;
+  const seqIndex = Math.max(0, seqLengths.indexOf(state.maxSeqLength as 128 | 256 | 512));
 
   const handleSelectMode = (mode: "cpu" | "gpu") => {
     if (mode === state.computeMode) return;
@@ -29,7 +32,12 @@ export function StepConfig({
     if (mode === "cpu") {
       const selected = models?.find((m) => m.id === state.modelId);
       if (!selected || !(selected.computeModes ?? ["cpu"]).includes("cpu")) {
-        updates.modelId = "distilbert-base-uncased";
+        // Pick a CPU-compatible fallback that matches the current task type.
+        // Causal LM tasks need a generative model — never DistilBERT.
+        const cpuFallback = isInstruction
+          ? "Qwen/Qwen2.5-0.5B"
+          : "distilbert-base-uncased";
+        updates.modelId = cpuFallback;
       }
     }
     updateState(updates);
@@ -121,6 +129,45 @@ export function StepConfig({
               ))}
             </div>
           </div>
+
+          {isInstruction && (
+            <div className="space-y-4 pt-4 border-t border-border">
+              <div className="flex items-start gap-2 rounded-md border border-blue-200 dark:border-blue-900/50 bg-blue-50 dark:bg-blue-950/30 px-3 py-2 text-sm text-blue-900 dark:text-blue-200">
+                <MessageSquareCode className="w-4 h-4 mt-0.5 shrink-0" />
+                <span>
+                  Causal language modeling with chat template:
+                  <code className="ml-1 px-1 py-0.5 rounded bg-blue-100 dark:bg-blue-900/50 font-mono text-[11px]">
+                    ### Instruction:\n{"{instruction}"}\n### Response:\n{"{response}"}
+                  </code>
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <Label className="text-base font-semibold">Max sequence length</Label>
+                <span className="font-mono text-sm bg-muted px-2 py-1 rounded">
+                  {state.maxSeqLength} tokens
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Longer sequences cover bigger Q&amp;A pairs but slow down training.
+              </p>
+              <Slider
+                value={[seqIndex]}
+                min={0}
+                max={2}
+                step={1}
+                onValueChange={([val]) =>
+                  updateState({ maxSeqLength: seqLengths[val] })
+                }
+                className="pt-4"
+                data-testid="slider-max-seq-length"
+              />
+              <div className="flex justify-between text-xs text-muted-foreground font-mono">
+                {seqLengths.map((n) => (
+                  <span key={n}>{n}</span>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="space-y-4 pt-4 border-t border-border">
             <div>

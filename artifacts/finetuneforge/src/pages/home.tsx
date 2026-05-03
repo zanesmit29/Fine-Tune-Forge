@@ -25,6 +25,7 @@ export interface WizardState {
   epochs: number;
   learningRate: number;
   loraRank: CreateJobBodyLoraRank;
+  maxSeqLength: number;
   computeMode: CreateJobBodyComputeMode;
   jobId: string | null;
 }
@@ -156,6 +157,10 @@ export default function Home({
           epochs: state.epochs,
           learningRate: state.learningRate,
           loraRank: state.loraRank,
+          maxSeqLength:
+            state.taskType === "instruction"
+              ? (state.maxSeqLength as 128 | 256 | 512)
+              : null,
           computeMode: state.computeMode,
         },
       },

@@ -52,6 +52,19 @@ export const CreateJobBodyLoraRank = {
   NUMBER_16: 16,
 } as const;
 
+/**
+ * @nullable
+ */
+export type CreateJobBodyMaxSeqLength =
+  | (typeof CreateJobBodyMaxSeqLength)[keyof typeof CreateJobBodyMaxSeqLength]
+  | null;
+
+export const CreateJobBodyMaxSeqLength = {
+  NUMBER_128: 128,
+  NUMBER_256: 256,
+  NUMBER_512: 512,
+} as const;
+
 export type CreateJobBodyComputeMode =
   (typeof CreateJobBodyComputeMode)[keyof typeof CreateJobBodyComputeMode];
 
@@ -76,6 +89,8 @@ export interface CreateJobBody {
   epochs: number;
   learningRate: number;
   loraRank: CreateJobBodyLoraRank;
+  /** @nullable */
+  maxSeqLength?: CreateJobBodyMaxSeqLength;
   computeMode: CreateJobBodyComputeMode;
 }
 
@@ -113,6 +128,8 @@ export interface TrainingJob {
   epochs: number;
   learningRate: number;
   loraRank: number;
+  /** @nullable */
+  maxSeqLength?: number | null;
   computeMode: TrainingJobComputeMode;
   status: TrainingJobStatus;
   createdAt: string;
@@ -126,6 +143,23 @@ export interface TrainingJob {
   evalLoss?: number | null;
   /** @nullable */
   accuracy?: number | null;
+  /**
+   * Final perplexity (causal LM tasks like instruction tuning)
+   * @nullable
+   */
+  perplexity?: number | null;
+  /** Per-epoch training loss values for plotting the loss curve */
+  epochLosses?: number[];
+  /**
+   * A representative instruction from the dataset used for sample inference
+   * @nullable
+   */
+  sampleInstruction?: string | null;
+  /**
+   * The fine-tuned model's generated response to sampleInstruction
+   * @nullable
+   */
+  sampleResponse?: string | null;
   /** @nullable */
   errorMessage?: string | null;
   /**
