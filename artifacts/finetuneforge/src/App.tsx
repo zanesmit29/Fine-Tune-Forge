@@ -8,10 +8,12 @@ import Home from "@/pages/home";
 import History from "@/pages/history";
 import type { WizardState } from "@/pages/home";
 import type { CreateJobBodyLoraRank } from "@workspace/api-client-react";
+import type { TaskTypeId } from "@/lib/task-types";
 
 const queryClient = new QueryClient();
 
 const defaultWizardState: WizardState = {
+  taskType: null,
   modelId: "",
   datasetPreview: null,
   textColumn: "",
@@ -24,8 +26,18 @@ const defaultWizardState: WizardState = {
 };
 
 function App() {
-  const [wizardStep, setWizardStep] = useState(1);
+  const [wizardStep, setWizardStep] = useState(0);
   const [wizardState, setWizardState] = useState<WizardState>(defaultWizardState);
+
+  const setTaskType = (id: TaskTypeId) => {
+    setWizardState({ ...defaultWizardState, taskType: id });
+    setWizardStep(1);
+  };
+
+  const resetWizard = () => {
+    setWizardState(defaultWizardState);
+    setWizardStep(0);
+  };
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -38,6 +50,8 @@ function App() {
                 setStep={setWizardStep}
                 state={wizardState}
                 setState={setWizardState}
+                onSelectTaskType={setTaskType}
+                onResetTaskType={resetWizard}
               />
             </Route>
             <Route path="/history" component={History} />
