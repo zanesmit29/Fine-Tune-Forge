@@ -1,0 +1,227 @@
+Feature: How to Get Started — Sidebar Page
+
+Add a "How to Get Started" page accessible from the sidebar 
+navigation. This is a static, well-designed documentation 
+page inside the app that guides new users through the full 
+workflow and explains each export format.
+
+Sidebar Navigation:
+1. Add a new nav item between "My Models" and "Integrations":
+   - Icon: BookOpen (Lucide)
+   - Label: "Get Started"
+   - Same styling as all other sidebar nav items
+
+Page Layout:
+- Page title: "Get Started with FineTuneForge"
+- Subtitle: "Everything you need to train your first model 
+  and put it to work."
+- Max-width: var(--content-default) 960px, centered
+- Divided into two main sections:
+  1. The 4-step workflow walkthrough
+  2. Export format guides
+
+--- SECTION 1: HOW IT WORKS ---
+Heading: "Training your first model"
+
+Four step cards stacked vertically, each with:
+- Step number badge (blue filled circle, white number)
+- Step title (--text-lg, font-weight 600)
+- 2-3 sentence explanation
+- A "tip" line at the bottom in a light blue tip box 
+  (background #EFF6FF, left border 2px #2563EB, 
+  icon: Lightbulb Lucide)
+
+Step 1 — "Choose a Task Type"
+  "Start by selecting the business problem you want 
+  to solve. FineTuneForge is built around tasks, not 
+  model architectures — so you don't need to know 
+  the difference between BERT and GPT to get started.
+  Currently available: Text Classification, Sentiment 
+  Analysis, and Instruction Tuning."
+  Tip: "Not sure which task to pick? If you want to 
+  sort or label text, choose Classification. If you 
+  want to detect tone or opinion, choose Sentiment 
+  Analysis. If you want a model that answers questions, 
+  choose Instruction Tuning."
+
+Step 2 — "Upload Your Data or Use a Template"
+  "Upload a CSV file with your training data, or pick 
+  one of our built-in templates to get started 
+  immediately. Your CSV needs at least two columns: 
+  the input text and the label or response.
+  For Classification and Sentiment: columns are 
+  'text' and 'label'. For Instruction Tuning: columns 
+  are 'instruction' and 'response'."
+  Tip: "Start with at least 50 rows for meaningful 
+  results. More data generally means better accuracy — 
+  200+ rows is ideal for Classification tasks."
+
+Step 3 — "Configure Your Training"
+  "Set your training parameters using the sliders. 
+  If you're unsure, the defaults are a safe starting 
+  point for most datasets.
+  Epochs: how many times the model reads your full 
+  dataset. More epochs can improve accuracy but may 
+  overfit on small datasets — 3 is a good default.
+  Learning Rate: how fast the model adapts. Lower is 
+  safer. Default 2e-5 works for most cases.
+  LoRA Rank: controls the size of the fine-tuning 
+  adapter. Higher rank = more capacity but slower 
+  training. r=8 is recommended for most tasks."
+  Tip: "Use CPU for small datasets and quick tests. 
+  Switch to GPU (requires your Modal API key) for 
+  larger datasets or bigger models like Mistral-7B."
+
+Step 4 — "Download Your Model and Code"
+  "Once training completes, download your model in 
+  one or more export formats. You'll also get the 
+  full Python training script that was used — 
+  so you can reproduce or modify the run anytime.
+  Your results page shows accuracy, loss, and a 
+  sample prediction so you can verify the model 
+  is working before you download."
+  Tip: "Save the Python training script — it's 
+  a complete, runnable fine-tuning pipeline you 
+  can use independently of FineTuneForge."
+
+--- SECTION 2: EXPORT FORMAT GUIDES ---
+Heading: "Understanding your export formats"
+Subtext: "Each format is designed for a different 
+use case. Here's what to do with each one."
+
+Three format guide cards, each as a full-width card 
+with a left accent border in the format's color:
+
+Card 1 — PKL (Python Pickle)
+Accent border: #2563EB (blue)
+Header: "PKL  ·  For Python pipelines"
+  (PKL in JetBrains Mono --text-lg bold)
+
+"The PKL file contains your fine-tuned model weights 
+in Python's native serialization format. It's the 
+easiest format to load inside a Python script or 
+Jupyter notebook."
+
+Code block (JetBrains Mono, dark terminal style):
+import pickle
+from transformers import pipeline
+
+with open("your_model.pkl", "rb") as f:
+    model = pickle.load(f)
+
+classifier = pipeline("text-classification", 
+                       model=model)
+result = classifier("Your input text here")
+print(result)
+
+Use cases list:
+· Internal Python scripts and automation
+· Jupyter notebook experiments
+· Integrating into an existing Flask or FastAPI app
+· scikit-learn pipeline compatibility
+
+Card 2 — ONNX (Open Neural Network Exchange)
+Accent border: #7C3AED (purple)
+Header: "ONNX  ·  For cross-platform inference"
+  (ONNX in JetBrains Mono --text-lg bold)
+
+"ONNX is an open format for running models across 
+different frameworks and languages. Use it when 
+you want to run inference in .NET, Java, C++, 
+or in a browser — anywhere Python isn't available."
+
+Code block:
+import onnxruntime as ort
+import numpy as np
+
+session = ort.InferenceSession("your_model.onnx")
+inputs = {"input_ids": np.array([[101, 2054, 2003, 102]])}
+outputs = session.run(None, inputs)
+print(outputs)
+
+Use cases list:
+· Production inference servers (low latency)
+· .NET, Java, or C++ applications
+· Edge devices and mobile deployment
+· Browser inference via ONNX.js
+
+Card 3 — GGUF (For LM Studio & Ollama)
+Accent border: #059669 (green)
+Header: "GGUF  ·  For local offline use"
+  (GGUF in JetBrains Mono --text-lg bold)
+
+"GGUF is the format used by LM Studio and Ollama 
+to run models entirely on your local machine — 
+no internet connection required after download. 
+This is only available for generative models 
+(Instruction Tuning task)."
+
+Subheading: "Loading in LM Studio"
+Numbered steps with icons:
+1. Download your .gguf file from the Results page
+2. Open LM Studio on your computer
+3. Go to "My Models" → click "Add Model"
+4. Select your downloaded .gguf file
+5. Click "Load Model" and start chatting
+
+Subheading: "Loading in Ollama"
+Code block:
+ollama create my-model -f ./Modelfile
+# In your Modelfile:
+# FROM ./your_model.gguf
+
+ollama run my-model
+"Tell me about your return policy"
+
+Use cases list:
+· Fully offline company FAQ assistant
+· Local product support chatbot
+· Air-gapped or privacy-sensitive environments
+· No API costs — runs entirely on your hardware
+
+--- SECTION 3: TIPS & BEST PRACTICES ---
+Heading: "Tips for better results"
+
+Four tip cards in a 2x2 grid:
+
+  "Start small, iterate fast"
+  "Train on 50–100 rows first to verify your 
+  data format works. Scale up once you're 
+  getting reasonable accuracy."
+
+  "Data quality beats quantity"
+  "Clean, consistent labels matter more than 
+  volume. 100 well-labelled rows outperform 
+  500 messy ones every time."
+
+  "Use GPU for models over 300M parameters"
+  "DistilBERT and BERT-Tiny run fine on CPU. 
+  For DeBERTa, RoBERTa, or any model over 
+  300M params, switch to GPU in Step 3."
+
+  "Save your training script"
+  "The exported Python script is a full, 
+  standalone fine-tuning pipeline. Keep it — 
+  you can run it on any machine with PyTorch 
+  and HuggingFace installed."
+
+Tip card style: white bg, 1px border #E2E8F0, 
+radius var(--radius-lg), shadow-sm,
+Lightbulb icon in blue top-left of each card
+
+UI Notes:
+- All code blocks: JetBrains Mono, --text-sm, 
+  dark background #0F172A, text #E2E8F0, 
+  border-radius var(--radius-md), 
+  padding var(--space-4),
+  "Copy" button top-right of each block 
+  (copies to clipboard on click, shows 
+  "Copied!" feedback for 2 seconds)
+- Section headings: --text-xl, font-weight 700, 
+  border-bottom 1px #E2E8F0, padding-bottom 
+  var(--space-3), margin-bottom var(--space-8)
+- Page is fully responsive — single column on mobile
+- No backend required — this is a fully static page
+
+Do not change training logic, other sidebar pages, 
+API routes, or the database schema.
