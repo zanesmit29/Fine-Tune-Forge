@@ -1166,6 +1166,91 @@ export const useTestModalConnection = <
 };
 
 /**
+ * Sends SIGTERM (then SIGKILL after a grace period) to the spawned training process and marks the job as cancelled.
+ * @summary Cancel a running training job
+ */
+export const getCancelJobUrl = (jobId: string) => {
+  return `/api/jobs/${jobId}/cancel`;
+};
+
+export const cancelJob = async (
+  jobId: string,
+  options?: RequestInit,
+): Promise<TrainingJob> => {
+  return customFetch<TrainingJob>(getCancelJobUrl(jobId), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getCancelJobMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof cancelJob>>,
+    TError,
+    { jobId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof cancelJob>>,
+  TError,
+  { jobId: string },
+  TContext
+> => {
+  const mutationKey = ["cancelJob"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof cancelJob>>,
+    { jobId: string }
+  > = (props) => {
+    const { jobId } = props ?? {};
+
+    return cancelJob(jobId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CancelJobMutationResult = NonNullable<
+  Awaited<ReturnType<typeof cancelJob>>
+>;
+
+export type CancelJobMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Cancel a running training job
+ */
+export const useCancelJob = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof cancelJob>>,
+    TError,
+    { jobId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof cancelJob>>,
+  TError,
+  { jobId: string },
+  TContext
+> => {
+  return useMutation(getCancelJobMutationOptions(options));
+};
+
+/**
  * Stores a Hugging Face API token in the server session after verifying it against the HF Hub
  * @summary Connect a Hugging Face account
  */

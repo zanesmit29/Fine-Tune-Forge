@@ -110,6 +110,7 @@ export const TrainingJobStatus = {
   running: "running",
   completed: "completed",
   failed: "failed",
+  cancelled: "cancelled",
 } as const;
 
 export interface TrainingJob {

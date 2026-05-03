@@ -1,14 +1,28 @@
 import { useEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   useGetJob,
   useGetJobLogs,
+  useCancelJob,
   getGetJobQueryKey,
   getGetJobLogsQueryKey,
 } from "@workspace/api-client-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Download, Code, CheckCircle2, XCircle, Cpu, Zap, Sparkles, MessageSquareCode, Copy, Plus } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2, Download, Code, CheckCircle2, XCircle, Cpu, Zap, Sparkles, MessageSquareCode, Copy, Plus, OctagonX, Ban } from "lucide-react";
 import {
   LineChart,
   Line,
@@ -436,7 +450,39 @@ export function StepTrain({
 
   const isCompleted = job?.status === "completed";
   const isFailed = job?.status === "failed";
+  const isCancelled = job?.status === "cancelled";
   const isRunning = job?.status === "running" || job?.status === "queued";
+
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const cancel = useCancelJob();
+  const handleCancel = () => {
+    if (!jobId) return;
+    cancel.mutate(
+      { jobId },
+      {
+        onSuccess: () => {
+          toast({
+            title: "Cancelling training",
+            description: "Sending stop signal to the training process...",
+          });
+          // Force-refresh the job/log queries so the UI updates promptly.
+          queryClient.invalidateQueries({ queryKey: getGetJobQueryKey(jobId) });
+          queryClient.invalidateQueries({
+            queryKey: getGetJobLogsQueryKey(jobId),
+          });
+        },
+        onError: (err) => {
+          toast({
+            title: "Could not cancel",
+            description:
+              err instanceof Error ? err.message : "Please try again.",
+            variant: "destructive",
+          });
+        },
+      },
+    );
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -447,6 +493,7 @@ export function StepTrain({
             {isRunning && <Loader2 className="w-5 h-5 text-primary animate-spin" />}
             {isCompleted && <CheckCircle2 className="w-6 h-6 text-green-500" />}
             {isFailed && <XCircle className="w-6 h-6 text-destructive" />}
+            {isCancelled && <Ban className="w-6 h-6 text-muted-foreground" />}
           </h2>
           <p className="text-muted-foreground mt-1">
             Job ID: <span className="font-mono text-xs">{jobId}</span>
@@ -469,8 +516,67 @@ export function StepTrain({
           >
             {job?.status || "Starting..."}
           </Badge>
+
+          {isRunning && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive gap-1.5"
+                  disabled={cancel.isPending}
+                  data-testid="button-cancel-training"
+                >
+                  {cancel.isPending ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <OctagonX className="w-3.5 h-3.5" />
+                  )}
+                  Stop training
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Stop this training run?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    The training process will be terminated immediately. Any
+                    progress made so far will be discarded and no model
+                    artifacts will be produced.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel data-testid="button-cancel-training-dismiss">
+                    Keep training
+                  </AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleCancel}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    data-testid="button-cancel-training-confirm"
+                  >
+                    Yes, stop it
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </div>
       </div>
+
+      {isCancelled && (
+        <div className="bg-muted/50 text-muted-foreground p-4 rounded-md border text-sm flex items-start gap-3">
+          <Ban className="w-4 h-4 mt-0.5 shrink-0" />
+          <div className="flex-1">
+            <div className="font-medium text-foreground mb-0.5">
+              Training cancelled
+            </div>
+            <p>
+              You stopped this run before it finished. No model files were
+              saved. Start a new fine-tune from the home page when you're
+              ready.
+            </p>
+          </div>
+        </div>
+      )}
 
       {(isCompleted || isFailed) && job && (
         <div className="grid grid-cols-3 gap-4">

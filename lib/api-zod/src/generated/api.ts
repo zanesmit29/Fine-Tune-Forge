@@ -63,7 +63,7 @@ export const ListJobsResponseItem = zod.object({
   loraRank: zod.number(),
   maxSeqLength: zod.number().nullish(),
   computeMode: zod.enum(["cpu", "gpu"]),
-  status: zod.enum(["queued", "running", "completed", "failed"]),
+  status: zod.enum(["queued", "running", "completed", "failed", "cancelled"]),
   createdAt: zod.coerce.date(),
   startedAt: zod.coerce.date().nullish(),
   completedAt: zod.coerce.date().nullish(),
@@ -160,7 +160,7 @@ export const GetJobResponse = zod.object({
   loraRank: zod.number(),
   maxSeqLength: zod.number().nullish(),
   computeMode: zod.enum(["cpu", "gpu"]),
-  status: zod.enum(["queued", "running", "completed", "failed"]),
+  status: zod.enum(["queued", "running", "completed", "failed", "cancelled"]),
   createdAt: zod.coerce.date(),
   startedAt: zod.coerce.date().nullish(),
   completedAt: zod.coerce.date().nullish(),
@@ -239,7 +239,7 @@ export const ListTrainedModelsResponseItem = zod.object({
   loraRank: zod.number(),
   maxSeqLength: zod.number().nullish(),
   computeMode: zod.enum(["cpu", "gpu"]),
-  status: zod.enum(["queued", "running", "completed", "failed"]),
+  status: zod.enum(["queued", "running", "completed", "failed", "cancelled"]),
   createdAt: zod.coerce.date(),
   startedAt: zod.coerce.date().nullish(),
   completedAt: zod.coerce.date().nullish(),
@@ -316,7 +316,7 @@ export const RenameTrainedModelResponse = zod.object({
   loraRank: zod.number(),
   maxSeqLength: zod.number().nullish(),
   computeMode: zod.enum(["cpu", "gpu"]),
-  status: zod.enum(["queued", "running", "completed", "failed"]),
+  status: zod.enum(["queued", "running", "completed", "failed", "cancelled"]),
   createdAt: zod.coerce.date(),
   startedAt: zod.coerce.date().nullish(),
   completedAt: zod.coerce.date().nullish(),
@@ -410,6 +410,75 @@ export const TestModalConnectionResponse = zod.object({
   connected: zod.boolean(),
   maskedTokenId: zod.string().nullish(),
   verifiedAt: zod.coerce.date().nullish(),
+});
+
+/**
+ * Sends SIGTERM (then SIGKILL after a grace period) to the spawned training process and marks the job as cancelled.
+ * @summary Cancel a running training job
+ */
+export const CancelJobParams = zod.object({
+  jobId: zod.coerce.string(),
+});
+
+export const CancelJobResponse = zod.object({
+  id: zod.string(),
+  modelId: zod.string(),
+  modelName: zod.string(),
+  nickname: zod.string().nullish(),
+  taskType: zod.string().nullish(),
+  datasetId: zod.string(),
+  datasetName: zod.string().nullish(),
+  textColumn: zod.string(),
+  labelColumn: zod.string(),
+  epochs: zod.number(),
+  learningRate: zod.number(),
+  loraRank: zod.number(),
+  maxSeqLength: zod.number().nullish(),
+  computeMode: zod.enum(["cpu", "gpu"]),
+  status: zod.enum(["queued", "running", "completed", "failed", "cancelled"]),
+  createdAt: zod.coerce.date(),
+  startedAt: zod.coerce.date().nullish(),
+  completedAt: zod.coerce.date().nullish(),
+  trainLoss: zod.number().nullish(),
+  evalLoss: zod.number().nullish(),
+  accuracy: zod.number().nullish(),
+  perplexity: zod
+    .number()
+    .nullish()
+    .describe("Final perplexity (causal LM tasks like instruction tuning)"),
+  epochLosses: zod
+    .array(zod.number())
+    .optional()
+    .describe("Per-epoch training loss values for plotting the loss curve"),
+  sampleInstruction: zod
+    .string()
+    .nullish()
+    .describe(
+      "A representative instruction from the dataset used for sample inference",
+    ),
+  sampleResponse: zod
+    .string()
+    .nullish()
+    .describe("The fine-tuned model's generated response to sampleInstruction"),
+  errorMessage: zod.string().nullish(),
+  pklPath: zod
+    .string()
+    .nullish()
+    .describe(
+      "Server-relative path to the .pkl export, or null if not available",
+    ),
+  onnxPath: zod
+    .string()
+    .nullish()
+    .describe(
+      "Server-relative path to the .onnx export, or null if not available",
+    ),
+  ggufPath: zod
+    .string()
+    .nullish()
+    .describe(
+      "Server-relative path to the .gguf export, or null if not available",
+    ),
 });
 
 /**

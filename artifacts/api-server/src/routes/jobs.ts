@@ -1,9 +1,9 @@
 import { Router, type IRouter } from "express";
 import { randomUUID } from "crypto";
-import { spawn } from "child_process";
+import { spawn, type ChildProcess } from "child_process";
 import path from "path";
 import fs from "fs";
-import { eq, desc, avg, count, sql } from "drizzle-orm";
+import { eq, desc, avg, count, sql, and, inArray } from "drizzle-orm";
 import { db, trainingJobsTable } from "@workspace/db";
 import {
   CreateJobBody,
@@ -76,7 +76,12 @@ export function formatJob(row: typeof trainingJobsTable.$inferSelect) {
     loraRank: row.loraRank,
     maxSeqLength: row.maxSeqLength ?? null,
     computeMode: (row.computeMode ?? "cpu") as "cpu" | "gpu",
-    status: row.status as "queued" | "running" | "completed" | "failed",
+    status: row.status as
+      | "queued"
+      | "running"
+      | "completed"
+      | "failed"
+      | "cancelled",
     createdAt: row.createdAt.toISOString(),
     startedAt: row.startedAt ? row.startedAt.toISOString() : null,
     completedAt: row.completedAt ? row.completedAt.toISOString() : null,
@@ -108,15 +113,64 @@ async function appendLog(jobId: string, line: string) {
     .where(eq(trainingJobsTable.id, jobId));
 }
 
+// Track child processes for in-flight jobs so we can interrupt them.
+const runningProcs = new Map<string, ChildProcess>();
+// Job IDs the user has explicitly cancelled — used so the close handler
+// records "cancelled" instead of "failed" when the proc exits non-zero.
+const cancelledJobs = new Set<string>();
+
+const CANCEL_KILL_TIMEOUT_MS = 5_000;
+
+// Active (non-terminal) statuses. Used as a guard so DB writes from spawn /
+// close / error handlers cannot overwrite a row that has already reached a
+// terminal state via another path (e.g. a fast cancel before spawn).
+const ACTIVE_STATUSES = ["queued", "running"] as const;
+
 async function runTraining(
   jobId: string,
   body: typeof CreateJobBody._type,
   modalCreds: { tokenId: string; tokenSecret: string } | null,
 ) {
+  // Pre-spawn cancellation guard: if the user cancelled the job between
+  // create-job returning and this runner starting, don't spawn at all.
+  const [existing] = await db
+    .select({ status: trainingJobsTable.status })
+    .from(trainingJobsTable)
+    .where(eq(trainingJobsTable.id, jobId));
+  if (!existing || !ACTIVE_STATUSES.includes(existing.status as typeof ACTIVE_STATUSES[number])) {
+    logger.info(
+      { jobId, status: existing?.status },
+      "Skipping training spawn — job is no longer in an active state",
+    );
+    cancelledJobs.delete(jobId);
+    return;
+  }
+
+  // Only flip queued -> running. If the row is no longer queued (e.g. the
+  // cancel endpoint already wrote a terminal state in the cancel-without-proc
+  // path), this is a no-op and we bail out below.
   await db
     .update(trainingJobsTable)
     .set({ status: "running", startedAt: new Date() })
+    .where(
+      and(
+        eq(trainingJobsTable.id, jobId),
+        inArray(trainingJobsTable.status, ["queued"]),
+      ),
+    );
+
+  const [afterFlip] = await db
+    .select({ status: trainingJobsTable.status })
+    .from(trainingJobsTable)
     .where(eq(trainingJobsTable.id, jobId));
+  if (afterFlip?.status !== "running") {
+    logger.info(
+      { jobId, status: afterFlip?.status },
+      "Job moved to a terminal state before spawn could start",
+    );
+    cancelledJobs.delete(jobId);
+    return;
+  }
 
   const csvPath = path.join(UPLOAD_DIR, `${body.datasetId}.csv`);
   const outputDir = path.join(RESULTS_DIR, jobId);
@@ -181,6 +235,8 @@ async function runTraining(
     },
   });
 
+  runningProcs.set(jobId, proc);
+
   proc.stdout.on("data", async (chunk: Buffer) => {
     const text = chunk.toString("utf-8").trim();
     for (const line of text.split("\n")) {
@@ -206,7 +262,36 @@ async function runTraining(
     }
   });
 
-  proc.on("close", async (code) => {
+  proc.on("close", async (code, signal) => {
+    runningProcs.delete(jobId);
+    const wasCancelled = cancelledJobs.delete(jobId);
+
+    if (wasCancelled) {
+      await appendLog(
+        jobId,
+        `[FineTuneForge] Training cancelled by user${
+          signal ? ` (signal ${signal})` : ""
+        }.`,
+      );
+      // Conditional write: only flip if the row is still active. Avoids
+      // clobbering a terminal state another handler may have written.
+      await db
+        .update(trainingJobsTable)
+        .set({
+          status: "cancelled",
+          completedAt: new Date(),
+          errorMessage: "Cancelled by user",
+        })
+        .where(
+          and(
+            eq(trainingJobsTable.id, jobId),
+            inArray(trainingJobsTable.status, [...ACTIVE_STATUSES]),
+          ),
+        );
+      logger.info({ jobId, code, signal }, "Training process cancelled");
+      return;
+    }
+
     if (code === 0) {
       const resultsFile = path.join(outputDir, "metrics.json");
       let trainLoss: number | null = null;
@@ -258,7 +343,12 @@ async function runTraining(
           onnxPath,
           ggufPath,
         })
-        .where(eq(trainingJobsTable.id, jobId));
+        .where(
+          and(
+            eq(trainingJobsTable.id, jobId),
+            inArray(trainingJobsTable.status, [...ACTIVE_STATUSES]),
+          ),
+        );
     } else {
       await appendLog(jobId, `[FineTuneForge] Training failed with exit code ${code}`);
       await db
@@ -268,12 +358,19 @@ async function runTraining(
           completedAt: new Date(),
           errorMessage: `Process exited with code ${code}`,
         })
-        .where(eq(trainingJobsTable.id, jobId));
+        .where(
+          and(
+            eq(trainingJobsTable.id, jobId),
+            inArray(trainingJobsTable.status, [...ACTIVE_STATUSES]),
+          ),
+        );
     }
     logger.info({ jobId, code }, "Training process finished");
   });
 
   proc.on("error", async (err) => {
+    runningProcs.delete(jobId);
+    cancelledJobs.delete(jobId);
     const msg = err.message;
     await appendLog(jobId, `[ERROR] Failed to start training: ${msg}`);
     await db
@@ -283,7 +380,12 @@ async function runTraining(
         completedAt: new Date(),
         errorMessage: msg,
       })
-      .where(eq(trainingJobsTable.id, jobId));
+      .where(
+        and(
+          eq(trainingJobsTable.id, jobId),
+          inArray(trainingJobsTable.status, [...ACTIVE_STATUSES]),
+        ),
+      );
   });
 }
 
@@ -414,6 +516,74 @@ router.post("/jobs", async (req, res): Promise<void> => {
   });
 
   res.status(201).json(GetJobResponse.parse(formatJob(job)));
+});
+
+router.post("/jobs/:jobId/cancel", async (req, res): Promise<void> => {
+  const raw = Array.isArray(req.params.jobId) ? req.params.jobId[0] : req.params.jobId;
+  const params = GetJobParams.safeParse({ jobId: raw });
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const jobId = params.data.jobId;
+
+  const [job] = await db
+    .select()
+    .from(trainingJobsTable)
+    .where(eq(trainingJobsTable.id, jobId));
+
+  if (!job) {
+    res.status(404).json({ error: "Job not found" });
+    return;
+  }
+
+  if (job.status !== "running" && job.status !== "queued") {
+    res.status(409).json({
+      error: `Job is ${job.status}; only running or queued jobs can be cancelled.`,
+    });
+    return;
+  }
+
+  const proc = runningProcs.get(jobId);
+  if (!proc) {
+    // Process is gone but the row was never finalised (e.g. server restart).
+    // Reconcile to a terminal state so the UI stops polling.
+    await appendLog(jobId, `[FineTuneForge] Cancel requested — no live process; marking cancelled.`);
+    await db
+      .update(trainingJobsTable)
+      .set({
+        status: "cancelled",
+        completedAt: new Date(),
+        errorMessage: "Cancelled by user",
+      })
+      .where(eq(trainingJobsTable.id, jobId));
+    const [updated] = await db
+      .select()
+      .from(trainingJobsTable)
+      .where(eq(trainingJobsTable.id, jobId));
+    res.json(GetJobResponse.parse(formatJob(updated!)));
+    return;
+  }
+
+  cancelledJobs.add(jobId);
+  await appendLog(jobId, `[FineTuneForge] Cancel requested — terminating training process...`);
+  proc.kill("SIGTERM");
+  setTimeout(() => {
+    // `proc.killed` flips to true the moment any signal is *sent*, so it's
+    // useless as a liveness check. Use `exitCode`/`signalCode` (both null
+    // while the process is still alive) plus the registry to verify this is
+    // still the active proc for this jobId.
+    const stillAlive =
+      proc.exitCode === null && proc.signalCode === null;
+    if (runningProcs.get(jobId) === proc && stillAlive) {
+      req.log.warn({ jobId }, "Training process did not exit on SIGTERM; sending SIGKILL");
+      proc.kill("SIGKILL");
+    }
+  }, CANCEL_KILL_TIMEOUT_MS);
+
+  // The close handler will flip the row to "cancelled". Return the
+  // current row so the UI can show the request landed.
+  res.json(GetJobResponse.parse(formatJob(job)));
 });
 
 router.get("/jobs/:jobId", async (req, res): Promise<void> => {
