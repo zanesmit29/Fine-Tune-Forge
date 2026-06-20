@@ -9,6 +9,13 @@ Usage:
                      --text-column <col> --label-column <col>
                      --epochs <n> --lr <lr> --lora-rank <r>
                      --output-dir <dir>
+
+NOTE: This file is kept byte-identical between `artifacts/api-server/training/`
+(the copy the Express server actually spawns — see `runTraining` in
+`src/routes/jobs.ts`) and the repo-root `training/` directory. Edit one and copy
+it to the other so they never drift. Multi-format exports (ONNX/GGUF) require
+`exports.py` to sit next to the running copy; when it does not, those exports are
+skipped gracefully and only the `.pkl` artifact is produced.
 """
 
 import argparse
@@ -34,6 +41,16 @@ os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
 os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
 os.environ.setdefault("DATASETS_VERBOSITY", "error")
 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
+
+# Optionally extend sys.path with an extra site-packages directory for
+# environments where the ML libraries live outside the default interpreter
+# path. This is configurable via the FTF_PYTHON_LIBS env var (e.g. a Replit
+# `.pythonlibs/lib/python3.11/site-packages`). When it is unset we rely
+# entirely on the ambient interpreter, so this script runs unmodified on any
+# standard Linux box that has the ML deps installed in the default environment.
+_extra_libs = os.environ.get("FTF_PYTHON_LIBS")
+if _extra_libs and os.path.isdir(_extra_libs) and _extra_libs not in sys.path:
+    sys.path.insert(0, _extra_libs)
 
 import pandas as pd
 
@@ -67,12 +84,18 @@ parser.add_argument("--lr", type=float, default=2e-4)
 parser.add_argument("--lora-rank", type=int, default=8)
 parser.add_argument("--output-dir", required=True)
 parser.add_argument("--task-type", default="classification",
-                    choices=["classification", "instruction"],
-                    help="Task type. Currently only 'classification' is implemented; "
-                         "'instruction' is accepted for forward compatibility.")
+                    choices=["classification", "sentiment", "instruction"],
+                    help="Task type. 'classification' and 'sentiment' are both "
+                         "trained as multi-class sequence classification; "
+                         "'instruction' is accepted for forward compatibility "
+                         "and additionally attempts a GGUF export.")
 parser.add_argument("--max-seq-length", type=int, default=128,
                     help="Max token sequence length for tokenization.")
 args = parser.parse_args()
+
+# Sentiment analysis is multi-class classification, so it shares the entire
+# code path below (sequence-classification head + SEQ_CLS LoRA). The task type
+# only influences the GGUF export decision near the end of the script.
 
 os.makedirs(args.output_dir, exist_ok=True)
 
@@ -82,16 +105,48 @@ def log(msg: str):
     print(msg, flush=True)
 
 
-def get_target_modules(model_id: str) -> list:
-    """Return LoRA target module names for a given model architecture."""
-    mid = model_id.lower()
+# Candidate attention-projection module name sets, by architecture family. The
+# right names differ across architectures and PEFT raises ValueError if none of
+# the requested modules exist in the model.
+_TARGET_MODULE_CANDIDATES = (
+    ["q_lin", "v_lin"],    # DistilBERT
+    ["query", "value"],    # BERT / RoBERTa / DeBERTa / ALBERT / ELECTRA
+    ["q_proj", "v_proj"],  # Qwen / Llama / Mistral and most modern decoders
+    ["c_attn"],            # GPT-2 / DistilGPT-2 (fused QKV projection)
+)
+
+
+def get_target_modules(model_id: str, model=None) -> list:
+    """Return LoRA target module names for a given model architecture.
+
+    Detection is by model id first (cheap and reliable for known models). When
+    the id is unrecognised we fall back to inspecting the model's actual leaf
+    module names and pick the first candidate set that is present — this makes
+    the trainer robust to architectures we haven't hard-coded.
+    """
+    mid = (model_id or "").lower()
+
+    # Order matters: check the most specific substrings first (e.g. "distilbert"
+    # contains "bert", "distilgpt2" contains "gpt2").
     if "distilbert" in mid:
         return ["q_lin", "v_lin"]
-    elif "qwen" in mid:
-        return ["q_proj", "v_proj"]
-    else:
-        # GPT-2, DistilGPT-2 and most decoder-only models
+    if any(k in mid for k in ("roberta", "deberta", "albert", "electra", "bert")):
+        return ["query", "value"]
+    if any(k in mid for k in ("distilgpt2", "gpt2", "gpt-2")):
         return ["c_attn"]
+    if any(k in mid for k in ("qwen", "llama", "mistral", "phi", "gemma", "falcon")):
+        return ["q_proj", "v_proj"]
+
+    # Unknown id — inspect the real module names and pick a candidate set whose
+    # modules all exist in the model.
+    if model is not None:
+        leaf_names = {name.split(".")[-1] for name, _ in model.named_modules()}
+        for candidate in _TARGET_MODULE_CANDIDATES:
+            if all(c in leaf_names for c in candidate):
+                return candidate
+
+    # Last resort: the most common BERT-style naming.
+    return ["query", "value"]
 
 
 # ---------------------------------------------------------------------------
@@ -127,13 +182,16 @@ warnings.filterwarnings("ignore")
 
 
 def get_target_modules(model_id: str) -> list:
-    mid = model_id.lower()
+    mid = (model_id or "").lower()
     if "distilbert" in mid:
         return ["q_lin", "v_lin"]
-    elif "qwen" in mid:
-        return ["q_proj", "v_proj"]
-    else:
+    if any(k in mid for k in ("roberta", "deberta", "albert", "electra", "bert")):
+        return ["query", "value"]
+    if any(k in mid for k in ("distilgpt2", "gpt2", "gpt-2")):
         return ["c_attn"]
+    if any(k in mid for k in ("qwen", "llama", "mistral", "phi", "gemma", "falcon")):
+        return ["q_proj", "v_proj"]
+    return ["query", "value"]
 
 
 # ── Configuration ────────────────────────────────────────────────────────────
@@ -336,7 +394,7 @@ try:
     if model.config.pad_token_id is None:
         model.config.pad_token_id = tokenizer.pad_token_id
 
-    target_modules = get_target_modules(args.model_id)
+    target_modules = get_target_modules(args.model_id, model)
     log(f"  LoRA target modules: {target_modules}")
     lora_config = LoraConfig(
         task_type=TaskType.SEQ_CLS,
@@ -391,6 +449,51 @@ try:
     eval_loss  = float(eval_result.get("eval_loss", 0))
     accuracy   = float(eval_result.get("eval_accuracy", 0))
 
+    # Per-epoch training loss, for the loss curve the UI plots.
+    epoch_losses = [
+        float(h["loss"]) for h in trainer.state.log_history if "loss" in h
+    ]
+
+    # Real per-class evaluation from the eval split (not estimated from the
+    # accuracy scalar). Run inference on the eval set and score with sklearn.
+    log("  Computing per-class metrics from eval split...")
+    from sklearn.metrics import (
+        confusion_matrix,
+        precision_recall_fscore_support,
+    )
+
+    pred_output = trainer.predict(eval_dataset)
+    y_true = np.asarray(pred_output.label_ids)
+    y_pred = np.argmax(pred_output.predictions, axis=-1)
+    label_indices = list(range(num_labels))
+    class_names = label_encoder.classes_.tolist()
+
+    precision, recall, f1, support = precision_recall_fscore_support(
+        y_true, y_pred, labels=label_indices, average=None, zero_division=0,
+    )
+    per_class_metrics = [
+        {
+            "label": class_names[i],
+            "precision": float(precision[i]),
+            "recall": float(recall[i]),
+            "f1": float(f1[i]),
+            "support": int(support[i]),
+        }
+        for i in range(num_labels)
+    ]
+    macro_f1 = float(f1.mean()) if num_labels else 0.0
+    weighted_f1 = float(
+        precision_recall_fscore_support(
+            y_true, y_pred, labels=label_indices, average="weighted",
+            zero_division=0,
+        )[2]
+    )
+    # Rows = true class, columns = predicted class, ordered by `classes`.
+    conf_matrix = confusion_matrix(
+        y_true, y_pred, labels=label_indices,
+    ).tolist()
+    log(f"  Macro F1: {macro_f1:.4f} | Weighted F1: {weighted_f1:.4f}")
+
     log("[6/6] Saving model and metrics...")
     model_path = os.path.join(args.output_dir, "model.pkl")
     with open(model_path, "wb") as f:
@@ -403,9 +506,51 @@ try:
         }, f)
     log(f"  Model saved → {model_path}")
 
-    metrics = {"train_loss": train_loss, "eval_loss": eval_loss, "accuracy": accuracy}
+    metrics = {
+        # Existing keys the server/UI already read.
+        "train_loss": train_loss,
+        "eval_loss": eval_loss,
+        "accuracy": accuracy,
+        "epoch_losses": epoch_losses,
+        # Real per-class evaluation computed with sklearn from the eval split.
+        "classes": class_names,
+        "per_class_metrics": per_class_metrics,
+        # `confusion_matrix[i][j]` = # of eval examples with true class
+        # `classes[i]` predicted as `classes[j]`.
+        "confusion_matrix": conf_matrix,
+        "macro_f1": macro_f1,
+        "weighted_f1": weighted_f1,
+    }
     with open(os.path.join(args.output_dir, "metrics.json"), "w") as f:
         json.dump(metrics, f)
+
+    # -----------------------------------------------------------------------
+    # Multi-format exports (best-effort). jobs.ts scans the output dir after
+    # the process exits and reports `Exports — pkl:.. onnx:.. gguf:..` based on
+    # which files exist, so producing the files here is what lights up the UI's
+    # ONNX/GGUF download buttons.
+    # -----------------------------------------------------------------------
+    log("[FineTuneForge] Exporting additional formats...")
+    try:
+        from exports import export_gguf, export_onnx
+    except ImportError as exc:
+        export_onnx = export_gguf = None
+        log(f"  [warn] export helpers unavailable, skipping ONNX/GGUF: {exc}")
+
+    if export_onnx is not None:
+        # ONNX is supported for every architecture we train.
+        export_onnx(model, tokenizer, args.output_dir)
+
+        # GGUF only makes sense for causal-LM / instruction models — llama.cpp's
+        # converter explicitly rejects sequence-classification heads (BERT,
+        # DistilBERT, RoBERTa, …). Skip with a clear reason for those.
+        if args.task_type == "instruction":
+            export_gguf(model, tokenizer, args.output_dir)
+        else:
+            log(
+                "  GGUF export skipped: the llama.cpp converter does not support "
+                f"sequence-classification heads ({args.task_type} task)."
+            )
 
     log(f"[FineTuneForge] DONE — train_loss={train_loss:.4f} eval_loss={eval_loss:.4f} accuracy={accuracy*100:.2f}%")
     sys.exit(0)

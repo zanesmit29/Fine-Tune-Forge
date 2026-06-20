@@ -43,6 +43,19 @@ export interface DatasetPreview {
   detectedLabelColumn?: string | null;
 }
 
+/**
+ * @nullable
+ */
+export type CreateJobBodyTaskType =
+  | (typeof CreateJobBodyTaskType)[keyof typeof CreateJobBodyTaskType]
+  | null;
+
+export const CreateJobBodyTaskType = {
+  classification: "classification",
+  sentiment: "sentiment",
+  instruction: "instruction",
+} as const;
+
 export type CreateJobBodyLoraRank =
   (typeof CreateJobBodyLoraRank)[keyof typeof CreateJobBodyLoraRank];
 
@@ -76,7 +89,7 @@ export const CreateJobBodyComputeMode = {
 export interface CreateJobBody {
   modelId: string;
   /** @nullable */
-  taskType?: string | null;
+  taskType?: CreateJobBodyTaskType;
   datasetId: string;
   /** @nullable */
   datasetName?: string | null;

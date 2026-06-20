@@ -32,6 +32,17 @@ export interface WizardState {
 
 const STEPS = ["Model", "Data", "Config", "Train"];
 
+// The API only accepts the backend-supported (and UI `available: true`) task
+// types. The wizard already gates selection to these, so guard the value here
+// to satisfy the constrained `CreateJobBody.taskType` enum.
+const SUPPORTED_TASK_TYPES = ["classification", "sentiment", "instruction"] as const;
+type SupportedTaskType = (typeof SUPPORTED_TASK_TYPES)[number];
+function toSupportedTaskType(t: TaskTypeId | null): SupportedTaskType | null {
+  return t && (SUPPORTED_TASK_TYPES as readonly string[]).includes(t)
+    ? (t as SupportedTaskType)
+    : null;
+}
+
 function computeClassDistribution(
   state: WizardState,
 ): { label: string; count: number }[] | null {
@@ -149,7 +160,7 @@ export default function Home({
       {
         data: {
           modelId: state.modelId,
-          taskType: state.taskType,
+          taskType: toSupportedTaskType(state.taskType),
           datasetId: state.datasetPreview.datasetId,
           datasetName: state.datasetName ?? null,
           textColumn: state.textColumn,
