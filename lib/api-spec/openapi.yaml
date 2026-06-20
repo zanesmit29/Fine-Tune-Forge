@@ -572,6 +572,41 @@ components:
           items:
             type: number
           description: Per-epoch training loss values for plotting the loss curve
+        classes:
+          type: ["array", "null"]
+          items:
+            type: string
+          description: Ordered list of class labels used for classification/sentiment
+        perClassMetrics:
+          type: ["array", "null"]
+          items:
+            type: object
+            required: [label, precision, recall, f1, support]
+            properties:
+              label:
+                type: string
+              precision:
+                type: number
+              recall:
+                type: number
+              f1:
+                type: number
+              support:
+                type: integer
+          description: Per-class precision, recall, F1, and support from evaluation
+        confusionMatrix:
+          type: ["array", "null"]
+          items:
+            type: array
+            items:
+              type: integer
+          description: Row-major confusion matrix (rows=true labels, cols=predicted)
+        macroF1:
+          type: ["number", "null"]
+          description: Macro-averaged F1 score across all classes
+        weightedF1:
+          type: ["number", "null"]
+          description: Weighted-average F1 score (weighted by support)
         sampleInstruction:
           type: ["string", "null"]
           description: A representative instruction from the dataset used for sample inference

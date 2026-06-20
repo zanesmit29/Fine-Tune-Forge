@@ -60,6 +60,15 @@ function parseEpochLosses(raw: string | null): number[] {
   }
 }
 
+function parseJson<T>(raw: string | null | undefined): T | null {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return null;
+  }
+}
+
 export function formatJob(row: typeof trainingJobsTable.$inferSelect) {
   return {
     id: row.id,
@@ -90,6 +99,11 @@ export function formatJob(row: typeof trainingJobsTable.$inferSelect) {
     accuracy: row.accuracy ?? null,
     perplexity: row.perplexity ?? null,
     epochLosses: parseEpochLosses(row.epochLosses),
+    classes: parseJson<string[]>(row.classes) ?? null,
+    perClassMetrics: parseJson<{label:string;precision:number;recall:number;f1:number;support:number}[]>(row.perClassMetrics) ?? null,
+    confusionMatrix: parseJson<number[][]>(row.confusionMatrix) ?? null,
+    macroF1: row.macroF1 ?? null,
+    weightedF1: row.weightedF1 ?? null,
     sampleInstruction: row.sampleInstruction ?? null,
     sampleResponse: row.sampleResponse ?? null,
     errorMessage: row.errorMessage ?? null,
@@ -352,6 +366,11 @@ async function runTraining(
       let epochLosses: number[] = [];
       let sampleInstruction: string | null = null;
       let sampleResponse: string | null = null;
+      let classes: string[] | null = null;
+      let perClassMetrics: unknown[] | null = null;
+      let confusionMatrix: number[][] | null = null;
+      let macroF1: number | null = null;
+      let weightedF1: number | null = null;
 
       if (fs.existsSync(resultsFile)) {
         try {
@@ -363,6 +382,11 @@ async function runTraining(
           epochLosses = Array.isArray(metrics.epoch_losses) ? metrics.epoch_losses : [];
           sampleInstruction = metrics.sample_instruction ?? null;
           sampleResponse = metrics.sample_response ?? null;
+          classes = Array.isArray(metrics.classes) ? metrics.classes : null;
+          perClassMetrics = Array.isArray(metrics.per_class_metrics) ? metrics.per_class_metrics : null;
+          confusionMatrix = Array.isArray(metrics.confusion_matrix) ? metrics.confusion_matrix : null;
+          macroF1 = typeof metrics.macro_f1 === "number" ? metrics.macro_f1 : null;
+          weightedF1 = typeof metrics.weighted_f1 === "number" ? metrics.weighted_f1 : null;
         } catch {
           logger.warn({ jobId }, "Failed to read metrics file");
         }
@@ -389,6 +413,11 @@ async function runTraining(
           accuracy,
           perplexity,
           epochLosses: JSON.stringify(epochLosses),
+          classes: classes ? JSON.stringify(classes) : null,
+          perClassMetrics: perClassMetrics ? JSON.stringify(perClassMetrics) : null,
+          confusionMatrix: confusionMatrix ? JSON.stringify(confusionMatrix) : null,
+          macroF1,
+          weightedF1,
           sampleInstruction,
           sampleResponse,
           pklPath,

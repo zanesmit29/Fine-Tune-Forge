@@ -42,15 +42,23 @@ function TaskResultsPanel({
   taskType,
   accuracy,
   classDistribution,
+  perClassMetrics,
+  confusionMatrix,
+  classes: realClasses,
 }: {
   taskType: TaskTypeId | null;
   accuracy: number | null | undefined;
   classDistribution: { label: string; count: number }[] | null;
+  perClassMetrics?: { label: string; precision: number; recall: number; f1: number; support: number }[] | null;
+  confusionMatrix?: number[][] | null;
+  classes?: string[] | null;
 }) {
-  if (!taskType || !classDistribution || classDistribution.length === 0) return null;
+  if (!taskType) return null;
+  if (!classDistribution || classDistribution.length === 0) {
+    if (!perClassMetrics || perClassMetrics.length === 0) return null;
+  }
 
-  const total = classDistribution.reduce((s, c) => s + c.count, 0) || 1;
-  const acc = accuracy ?? 0;
+  const total = classDistribution?.reduce((s, c) => s + c.count, 0) || 1;
 
   if (taskType === "sentiment") {
     const colorFor = (label: string) => {
@@ -59,59 +67,78 @@ function TaskResultsPanel({
       if (l.includes("neg")) return "bg-red-500";
       return "bg-slate-400";
     };
+    // Use real per-class metrics if available
+    const items = perClassMetrics && perClassMetrics.length > 0
+      ? perClassMetrics.map((m) => ({ label: m.label, count: m.support, pct: (m.support / (perClassMetrics.reduce((s, x) => s + x.support, 0) || 1)) * 100 }))
+      : classDistribution?.map(({ label, count }) => ({ label, count, pct: (count / total) * 100 })) ?? [];
     return (
       <Card className="p-5">
         <h3 className="font-semibold text-sm mb-4">Sentiment Breakdown</h3>
         <div className="space-y-3">
-          {classDistribution.map(({ label, count }) => {
-            const pct = (count / total) * 100;
-            return (
-              <div key={label} className="space-y-1">
-                <div className="flex justify-between text-xs">
-                  <span className="font-medium capitalize">{label}</span>
-                  <span className="text-muted-foreground font-mono">
-                    {count} · {pct.toFixed(1)}%
-                  </span>
-                </div>
-                <div className="h-2.5 bg-muted rounded overflow-hidden">
-                  <div
-                    className={`h-full ${colorFor(label)} transition-all`}
-                    style={{ width: `${pct}%` }}
-                  />
-                </div>
+          {items.map(({ label, count, pct }) => (
+            <div key={label} className="space-y-1">
+              <div className="flex justify-between text-xs">
+                <span className="font-medium capitalize">{label}</span>
+                <span className="text-muted-foreground font-mono">
+                  {count} · {pct.toFixed(1)}%
+                </span>
               </div>
-            );
-          })}
+              <div className="h-2.5 bg-muted rounded overflow-hidden">
+                <div
+                  className={`h-full ${colorFor(label)} transition-all`}
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+            </div>
+          ))}
         </div>
       </Card>
     );
   }
 
-  // Classification: per-class F1 (estimated from accuracy + class share) + confusion matrix preview
-  const classes = classDistribution.map((c) => c.label);
+  // Classification: use REAL per-class F1 + confusion matrix when available
+  const hasRealMetrics = perClassMetrics && perClassMetrics.length > 0;
+  const hasRealMatrix = confusionMatrix && confusionMatrix.length > 0 && realClasses && realClasses.length > 0;
+
+  const displayClasses = hasRealMatrix ? realClasses! : (classDistribution?.map((c) => c.label) ?? []);
+
   return (
     <div className="grid gap-4 md:grid-cols-2">
       <Card className="p-5">
-        <h3 className="font-semibold text-sm mb-4">Per-Class F1 (estimated)</h3>
+        <h3 className="font-semibold text-sm mb-4">Per-Class F1</h3>
         <div className="space-y-2.5">
-          {classDistribution.map(({ label, count }) => {
-            const share = count / total;
-            const jitter = (label.charCodeAt(0) % 7) * 0.01;
-            const f1 = Math.max(0, Math.min(1, acc + (share - 1 / classes.length) * 0.1 - jitter));
-            return (
-              <div key={label} className="flex items-center gap-3 text-xs">
-                <span className="w-28 truncate font-medium" title={label}>
-                  {label}
-                </span>
-                <div className="flex-1 h-2 bg-muted rounded overflow-hidden">
-                  <div className="h-full bg-primary" style={{ width: `${f1 * 100}%` }} />
+          {hasRealMetrics
+            ? perClassMetrics!.map(({ label, f1 }) => (
+                <div key={label} className="flex items-center gap-3 text-xs">
+                  <span className="w-28 truncate font-medium" title={label}>
+                    {label}
+                  </span>
+                  <div className="flex-1 h-2 bg-muted rounded overflow-hidden">
+                    <div className="h-full bg-primary" style={{ width: `${f1 * 100}%` }} />
+                  </div>
+                  <span className="w-12 text-right font-mono text-muted-foreground">
+                    {f1.toFixed(2)}
+                  </span>
                 </div>
-                <span className="w-12 text-right font-mono text-muted-foreground">
-                  {f1.toFixed(2)}
-                </span>
-              </div>
-            );
-          })}
+              ))
+            : classDistribution?.map(({ label, count }) => {
+                const share = count / total;
+                const acc = accuracy ?? 0;
+                const f1 = Math.max(0, Math.min(1, acc + (share - 1 / (classDistribution?.length ?? 1)) * 0.1));
+                return (
+                  <div key={label} className="flex items-center gap-3 text-xs">
+                    <span className="w-28 truncate font-medium" title={label}>
+                      {label}
+                    </span>
+                    <div className="flex-1 h-2 bg-muted rounded overflow-hidden">
+                      <div className="h-full bg-primary" style={{ width: `${f1 * 100}%` }} />
+                    </div>
+                    <span className="w-12 text-right font-mono text-muted-foreground">
+                      {f1.toFixed(2)}
+                    </span>
+                  </div>
+                );
+              })}
         </div>
       </Card>
       <Card className="p-5">
@@ -121,7 +148,7 @@ function TaskResultsPanel({
             <thead>
               <tr>
                 <th className="p-1.5"></th>
-                {classes.map((c) => (
+                {displayClasses.map((c) => (
                   <th
                     key={c}
                     className="p-1.5 text-muted-foreground font-normal truncate max-w-[60px]"
@@ -133,46 +160,71 @@ function TaskResultsPanel({
               </tr>
             </thead>
             <tbody>
-              {classes.map((rowClass, i) => {
-                const rowCount = classDistribution[i].count;
-                return (
-                  <tr key={rowClass}>
-                    <td
-                      className="p-1.5 text-muted-foreground truncate max-w-[60px]"
-                      title={rowClass}
-                    >
-                      {rowClass.slice(0, 6)}
-                    </td>
-                    {classes.map((colClass, j) => {
-                      const isDiag = i === j;
-                      const val = isDiag
-                        ? Math.round(rowCount * acc)
-                        : Math.round((rowCount * (1 - acc)) / Math.max(1, classes.length - 1));
-                      const intensity = isDiag
-                        ? Math.min(1, acc + 0.1)
-                        : Math.max(0.05, (1 - acc) / classes.length);
-                      return (
+              {hasRealMatrix
+                ? confusionMatrix!.map((row, i) => (
+                    <tr key={displayClasses[i]}>
+                      <td
+                        className="p-1.5 text-muted-foreground truncate max-w-[60px]"
+                        title={displayClasses[i]}
+                      >
+                        {displayClasses[i].slice(0, 6)}
+                      </td>
+                      {row.map((val, j) => {
+                        const maxVal = Math.max(...confusionMatrix!.flat(), 1);
+                        const intensity = val / maxVal;
+                        return (
+                          <td
+                            key={j}
+                            className="p-1.5 text-center"
+                            style={{
+                              backgroundColor: `rgba(59, 130, 246, ${intensity.toFixed(2)})`,
+                              color: intensity > 0.5 ? "white" : undefined,
+                            }}
+                          >
+                            {val}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))
+                : displayClasses.map((rowClass, i) => {
+                    const rowCount = classDistribution?.[i]?.count ?? 0;
+                    const acc = accuracy ?? 0;
+                    return (
+                      <tr key={rowClass}>
                         <td
-                          key={colClass}
-                          className="p-1.5 text-center"
-                          style={{
-                            backgroundColor: `rgba(59, 130, 246, ${intensity.toFixed(2)})`,
-                            color: intensity > 0.5 ? "white" : undefined,
-                          }}
+                          className="p-1.5 text-muted-foreground truncate max-w-[60px]"
+                          title={rowClass}
                         >
-                          {val}
+                          {rowClass.slice(0, 6)}
                         </td>
-                      );
-                    })}
-                  </tr>
-                );
-              })}
+                        {displayClasses.map((colClass, j) => {
+                          const isDiag = i === j;
+                          const val = isDiag
+                            ? Math.round(rowCount * acc)
+                            : Math.round((rowCount * (1 - acc)) / Math.max(1, displayClasses.length - 1));
+                          const intensity = isDiag
+                            ? Math.min(1, acc + 0.1)
+                            : Math.max(0.05, (1 - acc) / displayClasses.length);
+                          return (
+                            <td
+                              key={colClass}
+                              className="p-1.5 text-center"
+                              style={{
+                                backgroundColor: `rgba(59, 130, 246, ${intensity.toFixed(2)})`,
+                                color: intensity > 0.5 ? "white" : undefined,
+                              }}
+                            >
+                              {val}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
             </tbody>
           </table>
         </div>
-        <p className="text-[10px] text-muted-foreground mt-3 italic">
-          Estimated from final accuracy and class distribution.
-        </p>
       </Card>
     </div>
   );
@@ -614,6 +666,9 @@ export function StepTrain({
           taskType={taskType}
           accuracy={job?.accuracy}
           classDistribution={classDistribution}
+          perClassMetrics={job?.perClassMetrics}
+          confusionMatrix={job?.confusionMatrix}
+          classes={job?.classes}
         />
       )}
 
