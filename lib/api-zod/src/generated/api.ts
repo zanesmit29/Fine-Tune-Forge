@@ -118,7 +118,14 @@ export const createJobBodyEpochsMax = 5;
 
 export const CreateJobBody = zod.object({
   modelId: zod.string(),
-  taskType: zod.string().nullish(),
+  taskType: zod
+    .union([
+      zod.literal("classification"),
+      zod.literal("sentiment"),
+      zod.literal("instruction"),
+      zod.literal(null),
+    ])
+    .nullish(),
   datasetId: zod.string(),
   datasetName: zod.string().nullish(),
   textColumn: zod.string(),
