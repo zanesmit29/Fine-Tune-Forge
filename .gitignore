@@ -47,3 +47,7 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Runtime artifact directories (user uploads & trained models)
+artifacts/api-server/uploads/
+artifacts/api-server/results/

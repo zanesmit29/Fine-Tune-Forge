@@ -220,7 +220,7 @@ For Classification and Sentiment: columns are 'text' and 'label'. For Instructio
               title="Configure Your Training"
               body={`Set your training parameters using the sliders. If you're unsure, the defaults are a safe starting point for most datasets.
 Epochs: how many times the model reads your full dataset. More epochs can improve accuracy but may overfit on small datasets — 3 is a good default.
-Learning Rate: how fast the model adapts. Lower is safer. Default 2e-5 works for most cases.
+Learning Rate: how fast the model adapts. Lower is safer. Default 2e-4 works for most cases.
 LoRA Rank: controls the size of the fine-tuning adapter. Higher rank = more capacity but slower training. r=8 is recommended for most tasks.`}
               tip="Use CPU for small datasets and quick tests. Switch to GPU (requires your Modal API key) for larger datasets or bigger models like Mistral-7B."
             />
