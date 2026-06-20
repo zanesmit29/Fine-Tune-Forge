@@ -7,6 +7,9 @@ export interface ModalCredentials {
   verifiedAt: Date;
 }
 
+// Intentionally process-global, in-memory, single-workspace state.
+// Credentials are cleared on logout (POST/GET /api/logout) or server restart.
+// A multi-user/multi-instance deployment would need a session store instead.
 let creds: ModalCredentials | null = null;
 
 export function getModalCreds(): ModalCredentials | null {
