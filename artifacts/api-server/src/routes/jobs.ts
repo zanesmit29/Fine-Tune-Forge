@@ -99,18 +99,68 @@ export function formatJob(row: typeof trainingJobsTable.$inferSelect) {
   };
 }
 
-async function appendLog(jobId: string, line: string) {
-  const [job] = await db
-    .select({ logLines: trainingJobsTable.logLines })
-    .from(trainingJobsTable)
-    .where(eq(trainingJobsTable.id, jobId));
-  if (!job) return;
-  const lines: string[] = JSON.parse(job.logLines);
-  lines.push(line);
-  await db
-    .update(trainingJobsTable)
-    .set({ logLines: JSON.stringify(lines) })
-    .where(eq(trainingJobsTable.id, jobId));
+// ---------------------------------------------------------------------------
+// Per-job log buffer.  Lines are collected in memory and flushed to the DB
+// periodically via a single SQL-level atomic append (`jsonb || jsonb`),
+// eliminating the previous read-modify-write race where concurrent stdout
+// and stderr handlers could interleave and silently drop log lines.
+// ---------------------------------------------------------------------------
+const logBuffers = new Map<string, string[]>();
+const flushTimers = new Map<string, ReturnType<typeof setTimeout>>();
+const flushLocks = new Map<string, Promise<void>>();
+const LOG_FLUSH_INTERVAL_MS = 150;
+
+async function doFlush(jobId: string): Promise<void> {
+  const buf = logBuffers.get(jobId);
+  if (!buf || buf.length === 0) return;
+  const batch = buf.splice(0);
+  try {
+    await db
+      .update(trainingJobsTable)
+      .set({
+        logLines: sql<string>`(${trainingJobsTable.logLines}::jsonb || ${JSON.stringify(batch)}::jsonb)::text`,
+      })
+      .where(eq(trainingJobsTable.id, jobId));
+  } catch (err) {
+    logger.error({ err, jobId, lineCount: batch.length }, "Failed to flush log lines to DB");
+  }
+}
+
+function enqueueFlush(jobId: string): Promise<void> {
+  const prev = flushLocks.get(jobId) ?? Promise.resolve();
+  const next = prev.then(() => doFlush(jobId));
+  flushLocks.set(jobId, next);
+  return next;
+}
+
+function appendLog(jobId: string, line: string): void {
+  let buf = logBuffers.get(jobId);
+  if (!buf) {
+    buf = [];
+    logBuffers.set(jobId, buf);
+  }
+  buf.push(line);
+
+  if (!flushTimers.has(jobId)) {
+    flushTimers.set(
+      jobId,
+      setTimeout(() => {
+        flushTimers.delete(jobId);
+        enqueueFlush(jobId);
+      }, LOG_FLUSH_INTERVAL_MS),
+    );
+  }
+}
+
+async function flushJobLogs(jobId: string): Promise<void> {
+  const timer = flushTimers.get(jobId);
+  if (timer) {
+    clearTimeout(timer);
+    flushTimers.delete(jobId);
+  }
+  await enqueueFlush(jobId);
+  logBuffers.delete(jobId);
+  flushLocks.delete(jobId);
 }
 
 // Track child processes for in-flight jobs so we can interrupt them.
@@ -197,12 +247,12 @@ async function runTraining(
     "--max-seq-length", String(body.maxSeqLength ?? 256),
   ];
 
-  await appendLog(jobId, `[FineTuneForge] Starting training job ${jobId}`);
-  await appendLog(jobId, `[FineTuneForge] Compute: ${isGpu ? "Modal A10G GPU" : "Replit CPU"}`);
-  await appendLog(jobId, `[FineTuneForge] Model: ${body.modelId}`);
-  await appendLog(jobId, `[FineTuneForge] Dataset: ${body.datasetId}.csv`);
-  await appendLog(jobId, `[FineTuneForge] Config: epochs=${body.epochs}, lr=${body.learningRate}, lora_rank=${body.loraRank}`);
-  await appendLog(jobId, `[FineTuneForge] Spawning ${isGpu ? "Modal GPU" : "Python CPU"} training process...`);
+  appendLog(jobId, `[FineTuneForge] Starting training job ${jobId}`);
+  appendLog(jobId, `[FineTuneForge] Compute: ${isGpu ? "Modal A10G GPU" : "Replit CPU"}`);
+  appendLog(jobId, `[FineTuneForge] Model: ${body.modelId}`);
+  appendLog(jobId, `[FineTuneForge] Dataset: ${body.datasetId}.csv`);
+  appendLog(jobId, `[FineTuneForge] Config: epochs=${body.epochs}, lr=${body.learningRate}, lora_rank=${body.loraRank}`);
+  appendLog(jobId, `[FineTuneForge] Spawning ${isGpu ? "Modal GPU" : "Python CPU"} training process...`);
 
   const pythonLibs = "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages";
   const existingPythonPath = process.env.PYTHONPATH ?? "";
@@ -237,16 +287,16 @@ async function runTraining(
 
   runningProcs.set(jobId, proc);
 
-  proc.stdout.on("data", async (chunk: Buffer) => {
+  proc.stdout.on("data", (chunk: Buffer) => {
     const text = chunk.toString("utf-8").trim();
     for (const line of text.split("\n")) {
       if (line.trim()) {
-        await appendLog(jobId, line);
+        appendLog(jobId, line);
       }
     }
   });
 
-  proc.stderr.on("data", async (chunk: Buffer) => {
+  proc.stderr.on("data", (chunk: Buffer) => {
     const text = chunk.toString("utf-8").trim();
     for (const rawLine of text.split("\n")) {
       const line = rawLine.trim();
@@ -258,7 +308,7 @@ async function runTraining(
       }
       // Don't double-prefix lines the script already tagged.
       const alreadyTagged = /^\[(FineTuneForge|ERROR|WARN|INFO|\d+\/\d+)\]/.test(line);
-      await appendLog(jobId, alreadyTagged ? line : `[WARN] ${line}`);
+      appendLog(jobId, alreadyTagged ? line : `[WARN] ${line}`);
     }
   });
 
@@ -267,12 +317,13 @@ async function runTraining(
     const wasCancelled = cancelledJobs.delete(jobId);
 
     if (wasCancelled) {
-      await appendLog(
+      appendLog(
         jobId,
         `[FineTuneForge] Training cancelled by user${
           signal ? ` (signal ${signal})` : ""
         }.`,
       );
+      await flushJobLogs(jobId);
       // Conditional write: only flip if the row is still active. Avoids
       // clobbering a terminal state another handler may have written.
       await db
@@ -317,16 +368,17 @@ async function runTraining(
         }
       }
 
-      await appendLog(jobId, `[FineTuneForge] Training completed successfully!`);
-      if (trainLoss !== null) await appendLog(jobId, `[FineTuneForge] Final train loss: ${trainLoss.toFixed(4)}`);
-      if (evalLoss !== null) await appendLog(jobId, `[FineTuneForge] Final eval loss: ${evalLoss.toFixed(4)}`);
-      if (accuracy !== null) await appendLog(jobId, `[FineTuneForge] Accuracy: ${(accuracy * 100).toFixed(2)}%`);
+      appendLog(jobId, `[FineTuneForge] Training completed successfully!`);
+      if (trainLoss !== null) appendLog(jobId, `[FineTuneForge] Final train loss: ${trainLoss.toFixed(4)}`);
+      if (evalLoss !== null) appendLog(jobId, `[FineTuneForge] Final eval loss: ${evalLoss.toFixed(4)}`);
+      if (accuracy !== null) appendLog(jobId, `[FineTuneForge] Accuracy: ${(accuracy * 100).toFixed(2)}%`);
 
       const { pklPath, onnxPath, ggufPath } = detectExportPaths(jobId);
-      await appendLog(
+      appendLog(
         jobId,
         `[FineTuneForge] Exports — pkl:${pklPath ? "ok" : "—"} onnx:${onnxPath ? "ok" : "—"} gguf:${ggufPath ? "ok" : "—"}`,
       );
+      await flushJobLogs(jobId);
       await db
         .update(trainingJobsTable)
         .set({
@@ -350,7 +402,8 @@ async function runTraining(
           ),
         );
     } else {
-      await appendLog(jobId, `[FineTuneForge] Training failed with exit code ${code}`);
+      appendLog(jobId, `[FineTuneForge] Training failed with exit code ${code}`);
+      await flushJobLogs(jobId);
       await db
         .update(trainingJobsTable)
         .set({
@@ -372,7 +425,8 @@ async function runTraining(
     runningProcs.delete(jobId);
     cancelledJobs.delete(jobId);
     const msg = err.message;
-    await appendLog(jobId, `[ERROR] Failed to start training: ${msg}`);
+    appendLog(jobId, `[ERROR] Failed to start training: ${msg}`);
+    await flushJobLogs(jobId);
     await db
       .update(trainingJobsTable)
       .set({
@@ -548,7 +602,8 @@ router.post("/jobs/:jobId/cancel", async (req, res): Promise<void> => {
   if (!proc) {
     // Process is gone but the row was never finalised (e.g. server restart).
     // Reconcile to a terminal state so the UI stops polling.
-    await appendLog(jobId, `[FineTuneForge] Cancel requested — no live process; marking cancelled.`);
+    appendLog(jobId, `[FineTuneForge] Cancel requested — no live process; marking cancelled.`);
+    await flushJobLogs(jobId);
     await db
       .update(trainingJobsTable)
       .set({
@@ -566,7 +621,7 @@ router.post("/jobs/:jobId/cancel", async (req, res): Promise<void> => {
   }
 
   cancelledJobs.add(jobId);
-  await appendLog(jobId, `[FineTuneForge] Cancel requested — terminating training process...`);
+  appendLog(jobId, `[FineTuneForge] Cancel requested — terminating training process...`);
   proc.kill("SIGTERM");
   setTimeout(() => {
     // `proc.killed` flips to true the moment any signal is *sent*, so it's
