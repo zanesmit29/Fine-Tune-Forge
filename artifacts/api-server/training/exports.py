@@ -32,6 +32,75 @@ def _log(msg: str) -> None:
     print(msg, flush=True)
 
 
+_ONNX_DYNAMIC_AXES = {
+    "input_ids": {0: "batch", 1: "seq"},
+    "attention_mask": {0: "batch", 1: "seq"},
+    "logits": {0: "batch"},
+}
+
+
+def _export_onnx_dynamo(export_model, out_path, dummy_input_ids,
+                        dummy_attention_mask, output_dir) -> None:
+    """Export via the TorchDynamo-based exporter and inline external weights.
+
+    Raises on any failure so the caller can fall back to the legacy exporter.
+    """
+    import torch
+
+    with torch.no_grad():
+        torch.onnx.export(
+            export_model,
+            (dummy_input_ids, dummy_attention_mask),
+            out_path,
+            input_names=["input_ids", "attention_mask"],
+            output_names=["logits"],
+            dynamic_axes=_ONNX_DYNAMIC_AXES,
+            opset_version=17,
+            do_constant_folding=True,
+            dynamo=True,
+        )
+
+    # The dynamo exporter writes large weights to a sidecar `.onnx.data` file.
+    # Inline them so the single `model.onnx` download is self-contained.
+    sidecar = out_path + ".data"
+    if os.path.exists(sidecar):
+        import onnx  # type: ignore
+        from onnx.external_data_helper import (  # type: ignore
+            load_external_data_for_model,
+        )
+
+        model_proto = onnx.load(out_path, load_external_data=False)
+        load_external_data_for_model(model_proto, output_dir)
+        onnx.save_model(model_proto, out_path, save_as_external_data=False)
+        try:
+            os.remove(sidecar)
+        except OSError:
+            pass
+
+
+def _export_onnx_legacy(export_model, out_path, dummy_input_ids,
+                        dummy_attention_mask) -> None:
+    """Export via the classic TorchScript-based exporter (single file).
+
+    More broadly compatible across architectures and torch versions than the
+    dynamo path; used as a fallback. Raises on failure.
+    """
+    import torch
+
+    with torch.no_grad():
+        torch.onnx.export(
+            export_model,
+            (dummy_input_ids, dummy_attention_mask),
+            out_path,
+            input_names=["input_ids", "attention_mask"],
+            output_names=["logits"],
+            dynamic_axes=_ONNX_DYNAMIC_AXES,
+            opset_version=14,
+            do_constant_folding=True,
+            dynamo=False,
+        )
+
+
 def export_onnx(model, tokenizer, output_dir: str) -> Optional[str]:
     """Export the (merged) model to ONNX. Returns path or None on failure."""
     try:
@@ -54,51 +123,30 @@ def export_onnx(model, tokenizer, output_dir: str) -> Optional[str]:
         dummy_input_ids = dummy_input_ids.to(device)
         dummy_attention_mask = dummy_attention_mask.to(device)
 
-        with torch.no_grad():
-            torch.onnx.export(
-                export_model,
-                (dummy_input_ids, dummy_attention_mask),
-                out_path,
-                input_names=["input_ids", "attention_mask"],
-                output_names=["logits"],
-                dynamic_axes={
-                    "input_ids": {0: "batch", 1: "seq"},
-                    "attention_mask": {0: "batch", 1: "seq"},
-                    "logits": {0: "batch"},
-                },
-                opset_version=17,
-                do_constant_folding=True,
-                dynamo=True,
+        # Prefer the modern dynamo exporter; fall back to the classic exporter
+        # which works on architectures/torch versions where dynamo fails (e.g.
+        # BERT-family models on some torch builds).
+        try:
+            _export_onnx_dynamo(
+                export_model, out_path, dummy_input_ids,
+                dummy_attention_mask, output_dir,
             )
-
-        # The dynamo exporter writes large weights to a sidecar `.onnx.data`
-        # file. Inline them so the single `model.onnx` download is complete.
-        # If inlining fails the artifact is incomplete — treat as failure
-        # rather than serving a broken file via /download/onnx.
-        sidecar = out_path + ".data"
-        if os.path.exists(sidecar):
-            try:
-                import onnx  # type: ignore
-                from onnx.external_data_helper import (  # type: ignore
-                    load_external_data_for_model,
-                )
-
-                model_proto = onnx.load(out_path, load_external_data=False)
-                load_external_data_for_model(model_proto, output_dir)
-                onnx.save_model(model_proto, out_path, save_as_external_data=False)
+        except Exception as e:  # noqa: BLE001
+            _log(f"  [warn] dynamo ONNX export failed ({str(e)[:120]}); "
+                 "falling back to TorchScript exporter")
+            for p in (out_path, out_path + ".data"):
                 try:
-                    os.remove(sidecar)
+                    if os.path.exists(p):
+                        os.remove(p)
                 except OSError:
                     pass
-            except Exception as e:  # noqa: BLE001
-                _log(f"  [warn] ONNX export skipped: weight inlining failed: {e}")
-                for p in (out_path, sidecar):
-                    try:
-                        if os.path.exists(p):
-                            os.remove(p)
-                    except OSError:
-                        pass
-                return None
+            _export_onnx_legacy(
+                export_model, out_path, dummy_input_ids, dummy_attention_mask,
+            )
+
+        if not os.path.exists(out_path):
+            _log("  [warn] ONNX export skipped: no output file produced")
+            return None
 
         _log(f"  ONNX export → {out_path}")
         return out_path

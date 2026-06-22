@@ -488,6 +488,7 @@ components:
           type: string
         taskType:
           type: ["string", "null"]
+          enum: [classification, sentiment, instruction, null]
         datasetId:
           type: string
         datasetName:
