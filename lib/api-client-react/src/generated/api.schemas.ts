@@ -126,6 +126,14 @@ export const TrainingJobStatus = {
   cancelled: "cancelled",
 } as const;
 
+export type TrainingJobPerClassMetricsItem = {
+  label: string;
+  precision: number;
+  recall: number;
+  f1: number;
+  support: number;
+};
+
 export interface TrainingJob {
   id: string;
   modelId: string;
@@ -164,6 +172,31 @@ export interface TrainingJob {
   perplexity?: number | null;
   /** Per-epoch training loss values for plotting the loss curve */
   epochLosses?: number[];
+  /**
+   * Ordered list of class labels used for classification/sentiment
+   * @nullable
+   */
+  classes?: string[] | null;
+  /**
+   * Per-class precision, recall, F1, and support from evaluation
+   * @nullable
+   */
+  perClassMetrics?: TrainingJobPerClassMetricsItem[] | null;
+  /**
+   * Row-major confusion matrix (rows=true labels, cols=predicted)
+   * @nullable
+   */
+  confusionMatrix?: number[][] | null;
+  /**
+   * Macro-averaged F1 score across all classes
+   * @nullable
+   */
+  macroF1?: number | null;
+  /**
+   * Weighted-average F1 score (weighted by support)
+   * @nullable
+   */
+  weightedF1?: number | null;
   /**
    * A representative instruction from the dataset used for sample inference
    * @nullable

@@ -78,6 +78,36 @@ export const ListJobsResponseItem = zod.object({
     .array(zod.number())
     .optional()
     .describe("Per-epoch training loss values for plotting the loss curve"),
+  classes: zod
+    .array(zod.string())
+    .nullish()
+    .describe(
+      "Ordered list of class labels used for classification\/sentiment",
+    ),
+  perClassMetrics: zod
+    .array(
+      zod.object({
+        label: zod.string(),
+        precision: zod.number(),
+        recall: zod.number(),
+        f1: zod.number(),
+        support: zod.number(),
+      }),
+    )
+    .nullish()
+    .describe("Per-class precision, recall, F1, and support from evaluation"),
+  confusionMatrix: zod
+    .array(zod.array(zod.number()))
+    .nullish()
+    .describe("Row-major confusion matrix (rows=true labels, cols=predicted)"),
+  macroF1: zod
+    .number()
+    .nullish()
+    .describe("Macro-averaged F1 score across all classes"),
+  weightedF1: zod
+    .number()
+    .nullish()
+    .describe("Weighted-average F1 score (weighted by support)"),
   sampleInstruction: zod
     .string()
     .nullish()
@@ -182,6 +212,36 @@ export const GetJobResponse = zod.object({
     .array(zod.number())
     .optional()
     .describe("Per-epoch training loss values for plotting the loss curve"),
+  classes: zod
+    .array(zod.string())
+    .nullish()
+    .describe(
+      "Ordered list of class labels used for classification\/sentiment",
+    ),
+  perClassMetrics: zod
+    .array(
+      zod.object({
+        label: zod.string(),
+        precision: zod.number(),
+        recall: zod.number(),
+        f1: zod.number(),
+        support: zod.number(),
+      }),
+    )
+    .nullish()
+    .describe("Per-class precision, recall, F1, and support from evaluation"),
+  confusionMatrix: zod
+    .array(zod.array(zod.number()))
+    .nullish()
+    .describe("Row-major confusion matrix (rows=true labels, cols=predicted)"),
+  macroF1: zod
+    .number()
+    .nullish()
+    .describe("Macro-averaged F1 score across all classes"),
+  weightedF1: zod
+    .number()
+    .nullish()
+    .describe("Weighted-average F1 score (weighted by support)"),
   sampleInstruction: zod
     .string()
     .nullish()
@@ -261,6 +321,36 @@ export const ListTrainedModelsResponseItem = zod.object({
     .array(zod.number())
     .optional()
     .describe("Per-epoch training loss values for plotting the loss curve"),
+  classes: zod
+    .array(zod.string())
+    .nullish()
+    .describe(
+      "Ordered list of class labels used for classification\/sentiment",
+    ),
+  perClassMetrics: zod
+    .array(
+      zod.object({
+        label: zod.string(),
+        precision: zod.number(),
+        recall: zod.number(),
+        f1: zod.number(),
+        support: zod.number(),
+      }),
+    )
+    .nullish()
+    .describe("Per-class precision, recall, F1, and support from evaluation"),
+  confusionMatrix: zod
+    .array(zod.array(zod.number()))
+    .nullish()
+    .describe("Row-major confusion matrix (rows=true labels, cols=predicted)"),
+  macroF1: zod
+    .number()
+    .nullish()
+    .describe("Macro-averaged F1 score across all classes"),
+  weightedF1: zod
+    .number()
+    .nullish()
+    .describe("Weighted-average F1 score (weighted by support)"),
   sampleInstruction: zod
     .string()
     .nullish()
@@ -338,6 +428,36 @@ export const RenameTrainedModelResponse = zod.object({
     .array(zod.number())
     .optional()
     .describe("Per-epoch training loss values for plotting the loss curve"),
+  classes: zod
+    .array(zod.string())
+    .nullish()
+    .describe(
+      "Ordered list of class labels used for classification\/sentiment",
+    ),
+  perClassMetrics: zod
+    .array(
+      zod.object({
+        label: zod.string(),
+        precision: zod.number(),
+        recall: zod.number(),
+        f1: zod.number(),
+        support: zod.number(),
+      }),
+    )
+    .nullish()
+    .describe("Per-class precision, recall, F1, and support from evaluation"),
+  confusionMatrix: zod
+    .array(zod.array(zod.number()))
+    .nullish()
+    .describe("Row-major confusion matrix (rows=true labels, cols=predicted)"),
+  macroF1: zod
+    .number()
+    .nullish()
+    .describe("Macro-averaged F1 score across all classes"),
+  weightedF1: zod
+    .number()
+    .nullish()
+    .describe("Weighted-average F1 score (weighted by support)"),
   sampleInstruction: zod
     .string()
     .nullish()
@@ -457,6 +577,36 @@ export const CancelJobResponse = zod.object({
     .array(zod.number())
     .optional()
     .describe("Per-epoch training loss values for plotting the loss curve"),
+  classes: zod
+    .array(zod.string())
+    .nullish()
+    .describe(
+      "Ordered list of class labels used for classification\/sentiment",
+    ),
+  perClassMetrics: zod
+    .array(
+      zod.object({
+        label: zod.string(),
+        precision: zod.number(),
+        recall: zod.number(),
+        f1: zod.number(),
+        support: zod.number(),
+      }),
+    )
+    .nullish()
+    .describe("Per-class precision, recall, F1, and support from evaluation"),
+  confusionMatrix: zod
+    .array(zod.array(zod.number()))
+    .nullish()
+    .describe("Row-major confusion matrix (rows=true labels, cols=predicted)"),
+  macroF1: zod
+    .number()
+    .nullish()
+    .describe("Macro-averaged F1 score across all classes"),
+  weightedF1: zod
+    .number()
+    .nullish()
+    .describe("Weighted-average F1 score (weighted by support)"),
   sampleInstruction: zod
     .string()
     .nullish()
